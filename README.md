@@ -20,3 +20,7 @@ plotting.py
 Requires 3 input arguments: datacube, raw image file, and a parameter known as "wave_bin" which is an integer from 0 to 871 indicating the particular spectral channel that will be displayed in the lower plot.
 
 util scripts produce an output that is a class object, e.g. saved as "cube". This variable can be input as the first input in plotting.hyper_viz. Calling the .data method on it, e.g. "cube.data" will produce the 2nd input (raw image data). Third input is entered by programmer.
+
+bband_plot.py
+
+If you just want to view a broadband image, call bband_plot.plot_image() which takes just 1 argument, the variable output from .read_raw() and it plots just a broadband image.
