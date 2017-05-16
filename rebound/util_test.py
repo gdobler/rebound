@@ -61,7 +61,7 @@ def read_raw(rawfile, shape, hyper=False, verbose=True):
     ***
     NOTE: for hyperspectral data this is determined automatically via the header files
     but for broadband images it must be entered when calling read_raw.
-    For rebound test image data, this is a 2-dimensional array (height x width)
+    For rebound test image data, this is a 2-dimensional array (width x height)
     *** 
     hyper : bool, optional
         Set this flag to read a hyperspectral image.
