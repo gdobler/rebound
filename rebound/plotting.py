@@ -31,6 +31,7 @@ def hyper_viz(cube, img, wave_bin, asp=0.45):
     # -- show the image
     axim.axis("off")
     im = axim.imshow(img[wave_bin], "gist_gray", interpolation="nearest", aspect=asp)
+    axim.set_title('wave_bin (0 to 871) shown below: '+str(wave_bin))
 
     # -- show the spectrum
     axsp.set_xlim(cube.waves[0], cube.waves[-1])
@@ -38,7 +39,7 @@ def hyper_viz(cube, img, wave_bin, asp=0.45):
 
     fig.canvas.draw()
     fig.canvas.mpl_connect("motion_notify_event", update_spec)
-    fig.canvas.set_window_title('wave_bin (0 to 871): '+str(wave_bin))
+    # fig.canvas.set_window_title('wave_bin (0 to 871): '+str(wave_bin))
 
     plt.show()
 
