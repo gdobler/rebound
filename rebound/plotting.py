@@ -38,7 +38,7 @@ def hyper_viz(cube, img, wave_bin, asp=0.45):
 
     fig.canvas.draw()
     fig.canvas.mpl_connect("motion_notify_event", update_spec)
-    fig.canvas.set_window_title('wavelength: '+str(wavelength))
+    fig.canvas.set_window_title('wave_bin (0 to 871): '+str(wave_bin))
 
     plt.show()
 
