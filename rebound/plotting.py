@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import matplotlib
+matplotlib.use('TkAgg') # set back-end
 import matplotlib.pyplot as plt
 
 
-def hyper_viz(cube, img, asp=0.45):
+def hyper_viz(cube, img, wave_bin, asp=0.45):
     """
     Visualize a hyperspectral data cube.
     """
@@ -23,12 +25,12 @@ def hyper_viz(cube, img, asp=0.45):
 
 
     # -- set up the plot
-    fig, ax    = plt.subplots(2, 1, figsize=(10, 10))
+    fig, ax = plt.subplots(2, 1, figsize=(10, 10))
     axsp, axim = ax
 
     # -- show the image
     axim.axis("off")
-    im = axim.imshow(img, "gist_gray", interpolation="nearest", aspect=asp)
+    im = axim.imshow(img[wave_bin], "gist_gray", interpolation="nearest", aspect=asp)
 
     # -- show the spectrum
     axsp.set_xlim(cube.waves[0], cube.waves[-1])
@@ -36,6 +38,7 @@ def hyper_viz(cube, img, asp=0.45):
 
     fig.canvas.draw()
     fig.canvas.mpl_connect("motion_notify_event", update_spec)
+    fig.canvas.set_window_title('wavelength: '+str(wavelength))
 
     plt.show()
 
