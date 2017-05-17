@@ -33,7 +33,7 @@ Compresses raw image data into hdf5 format (a work in progress, currently only c
 - full filepath to output folder for hdf5 file object (this folder requires 2 sub-folder be created before running script: /hyperspectral and /broadband
 You can also set arguments for compression ratio, etc. It calls the .read_raw() method from util_test automatically and outputs an hdf5 file object.
 
-dependencies are:
-- util_test 
-- the Python library h5py
+    dependencies are:
+    - util_test 
+    - the Python library h5py
 
