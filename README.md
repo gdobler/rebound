@@ -24,3 +24,16 @@ util scripts produce an output that is a class object, e.g. saved as "cube". Thi
 bband_plot.py
 
 If you just want to view a broadband image, call bband_plot.plot_image() which takes just 1 argument, the variable output from .read_raw().
+
+hdf5_compress.py
+
+Compresses raw image data into hdf5 format (a work in progress, currently only converts broadband from the rebound test images taken in May, edits welcome). Requires 3 inputs: 
+- full filepath for the raw image data, 
+- shape (which is just a tuple of height x width for May test images), and
+- full filepath to output folder for hdf5 file object (this folder requires 2 sub-folder be created before running script: /hyperspectral and /broadband
+You can also set arguments for compression ratio, etc. It calls the .read_raw() method from util_test automatically and outputs an hdf5 file object.
+
+dependencies are:
+- util_test 
+- the Python library h5py
+
