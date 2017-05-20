@@ -41,12 +41,16 @@ if __name__ == "__main__":
     # -- get file names
     dpath  = os.path.join(os.environ["REBOUND_DATA"], "data_3d", "data_npy")
     fnames = [os.path.join(dpath, i) for i in sorted(os.listdir(dpath))]
+    nfiles = len(fnames)
+    
+    # -- loop through files
+    for ii in range(nfiles):
+        print("working on file {0:3} of {1}.".format(ii, nfiles))
 
-    # -- load the first file
-    print("reading data...")
-    data = np.load(fnames[0])
+        # -- load the first file
+        data = np.load(fnames[ii])
 
-    # -- make a plot and write to file
-    print("writing png...")
-    oname = os.path.join(os.environ["REBOUND_WRITE"], "check_tile_000.png")
-    plot_tile(data, oname, samp=10)
+        # -- make a plot and write to file
+        oname = os.path.join(os.environ["REBOUND_WRITE"], 
+                             "check_tile_{0:03}.png".format(ii))
+        plot_tile(data, oname, samp=10)
