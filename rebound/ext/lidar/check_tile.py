@@ -31,7 +31,7 @@ def plot_tile(data, oname, samp=1):
     ax.set_xlim(data[:, 0].min()*scl, data[:, 0].max() * scl)
     ax.set_ylim(data[:, 1].min()*scl, data[:, 1].max() * scl)
     fig.canvas.draw()
-    fig.savefig(oname)
+    fig.savefig(oname, clobber=True)
 
     return
 
