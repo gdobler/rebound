@@ -36,3 +36,5 @@ for ii, fname in enumerate(fnames):
     rast[rind, cind] += tile[:, 2]
     cnts[rind, cind] += tcnt[tcnt > 0]
 
+# -- convert sum to mean
+rast /= cnts + (cnts == 0)
