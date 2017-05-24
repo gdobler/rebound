@@ -112,7 +112,7 @@ def stretch_image(img, lim):
     return cimg.astype(np.uint8)
 
 
-def convert_raws(path, fac=1):
+def convert_raws(path, fac=1, gray=False):
     """
     Convert all raw files in a directory to jpg.  NOTE: Image size 
     and RGB are HARD CODED!
@@ -124,6 +124,12 @@ def convert_raws(path, fac=1):
     fac : int, optional
         Sampling of the image.
     """
+
+    # -- set the scaling
+    if gray:
+        scl = np.array([0.57857543, 0.96972706, 1.0])
+    else:
+        scl = np.array([1.0, 1.0, 1.0])
 
     # -- get the file names
     fnames = [os.path.join(path, i) for i in sorted(os.listdir(path)) if 
@@ -144,5 +150,7 @@ def convert_raws(path, fac=1):
                       .format(ii + 1, nfiles)), 
             sys.stdout.flush()
         img[...] = read_raw(fname, rgb=True)[::fac, ::fac]
-        spm.imsave(fname.replace("raw", "jpg"), img)
+        spm.imsave(fname.replace("raw", "jpg"), 
+                   stretch_image(gamma_scale((img / scl) \
+                       .clip(0, 255).astype(np.uint8), 0.5, 2.0), (60, 200)))
     print("")
