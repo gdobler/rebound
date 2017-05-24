@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
+import sys
 import numpy as np
+import scipy.misc as spm
 
 def rg8_to_rgb(img):
     """
@@ -91,7 +94,7 @@ def stretch_image(img, lim):
     img : ndarray
         An 8-bit image.
     lim : list
-        The upper and lower limit to clip the image
+        The upper and lower limit to clip the image.
 
     Returns
     -------
@@ -107,3 +110,39 @@ def stretch_image(img, lim):
     cimg *= 255.0 / cimg.max()
 
     return cimg.astype(np.uint8)
+
+
+def convert_raws(path, fac=1):
+    """
+    Convert all raw files in a directory to jpg.  NOTE: Image size 
+    and RGB are HARD CODED!
+
+    Parameters
+    ----------
+    path : str
+        Path to raw files.
+    fac : int, optional
+        Sampling of the image.
+    """
+
+    # -- get the file names
+    fnames = [os.path.join(path, i) for i in sorted(os.listdir(path)) if 
+              ".raw" in i]
+    nfiles = len(fnames)
+
+    # -- initialize the image
+    sh  = (3072 // (2 * fac), 4096 // (2 * fac), 3)
+    img = np.zeros(sh, dtype=np.uint8)
+
+    # -- loop through files and convert
+    for ii, fname in enumerate(fnames):
+        oname = fname.replace("raw", "jpg")
+        if os.path.isfile(oname):
+            continue
+        if (ii + 1) % 25 == 0:
+            print("\rworking on file {0:5} of {1:5}..." \
+                      .format(ii + 1, nfiles)), 
+            sys.stdout.flush()
+        img[...] = read_raw(fname, rgb=True)[::fac, ::fac]
+        spm.imsave(fname.replace("raw", "jpg"), img)
+    print("")
