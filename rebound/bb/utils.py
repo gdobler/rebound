@@ -31,7 +31,7 @@ def rg8_to_rgb(img):
     return np.dstack((red, grn, blu))
 
 
-def read_raw(fname, sh=[3072, 4096], rgb=False):
+def read_raw(fname, sh=[3072, 4096], rgb=False, usb=False):
     """
     Read in a raw image file.  Assumes monochrome RG8.
 
@@ -43,12 +43,18 @@ def read_raw(fname, sh=[3072, 4096], rgb=False):
         The number of rows and columns of the output image.
     rgb : bool, optional
         Flag to convert to RGB.
+    usb : bool, optional
+        Read in an image file from the old USB camera.
 
     Returns
     -------
     ndarray
         The output image; either 2D or 3D if rgb is set to True.
     """
+
+    if usb:
+        return np.fromfile(fname, dtype=np.uint8) \
+            .reshape(2160, 4096, 3)[..., ::-1]
 
     if rgb:
         return rg8_to_rgb(np.fromfile(fname, dtype=np.uint8).reshape(sh))
