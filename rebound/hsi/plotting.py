@@ -9,6 +9,14 @@ import matplotlib.pyplot as plt
 def hyper_viz(cube, img, wave_bin, asp=0.45):
     """
     Visualize a hyperspectral data cube.
+    
+    Args:
+        cube      : Output of utils.read_hyper(Raw Image Path)
+        img       : cube.data
+        wave_bin  : 
+        asp       :
+
+    
     """
 
     def update_spec(event):
