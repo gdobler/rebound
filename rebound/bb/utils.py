@@ -149,17 +149,14 @@ def convert_raws(path, fac=1, gray=False):
 
     # -- loop through files and convert
     for ii, fname in enumerate(fnames):
-        ind = int(os.path.split(fname)[-1].split("_")[2])
-        oname = os.path.join(path, "test_night_{0:05}_alt.raw".format(ind))
-        shutil.move(fname, oname)
-        imname = oname.replace("raw", "jpg")
+        imname = fname.replace("raw", "jpg")
         if os.path.isfile(imname):
             continue
         if (ii + 1) % 25 == 0:
             print("\rworking on file {0:5} of {1:5}..." \
                       .format(ii + 1, nfiles)), 
             sys.stdout.flush()
-        img[...] = read_raw(oname, rgb=True)[::fac, ::fac]
+        img[...] = read_raw(fname, rgb=True)[::fac, ::fac]
         spm.imsave(imname , stretch_image(gamma_scale((img / scl) \
                        .clip(0, 255).astype(np.uint8), 0.5, 2.0), (60, 200)))
     print("")
