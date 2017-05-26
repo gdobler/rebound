@@ -17,13 +17,17 @@ def convert_lum(data_dir):
     Returns numpy datacube of luminosity values with dimensions: w x h x # of images (about 60)
 
     '''
-    return  np.array([np.fromfile(os.path.join(data_dir,i),dtype=np.uint8).reshape(2160,4096,3).mean(axis=-1) for i in sorted(os.listdir(data_dir))[::6]])
+    imgs = np.array([np.fromfile(os.path.join(data_dir,i),dtype=np.uint8).reshape(2160,4096,3).mean(axis=-1) for i in sorted(os.listdir(data_dir))[::60]])
 
+    shape = imgs.shape
 
-#notes: imgs -= img.mean(i)
+    # stack into 3d array nrows, ncols, nimg
+    imgs = imgs.reshape(shape[1],shape[2],shape[0])
 
-# -- stack into 3D array (nrow, ncol, nimg)
+    # -- subtract mean along nimg axis and divide by stddev along nimg axis
+    imgs -= imgs.mean(2,keepdims=True)
 
-# -- subtract mean along nimg axis and divide by stddev along nimg axis
+    return imgs/imgs.std(2,keepdims=True) # need to address zero values...
+
 
 # -- correlate (multiply and mean) with neighboring pixels
