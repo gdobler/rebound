@@ -17,7 +17,7 @@ def convert_lum(data_dir):
     Returns numpy datacube of luminosity values with dimensions: w x h x # of images (about 60)
 
     '''
-    imgs = np.array([np.fromfile(os.path.join(data_dir,i),dtype=np.uint8).reshape(2160,4096,3).mean(axis=-1) for i in sorted(os.listdir(data_dir))[::60]])
+    imgs = np.array([np.fromfile(os.path.join(data_dir,i),dtype=np.uint8).reshape(2160,4096,3).mean(axis=-1) for i in sorted(os.listdir(data_dir))[::6]])
 
     shape = imgs.shape
 
