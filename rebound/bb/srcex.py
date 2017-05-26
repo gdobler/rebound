@@ -14,7 +14,7 @@ def convert_lum(data_dir):
 
     Finds luminosity (mean of values on RGB axis)
 
-    Returns numpy datacube of scaled luminosity values with dimensions: w x h x # of images (about 60)
+    Returns numpy datacube of scaled luminosity values with dimensions: nrows x ncols x # of images (about 60)
 
     '''
     imgs = np.array([np.fromfile(os.path.join(data_dir,i),dtype=np.uint8).reshape(2160,4096,3).mean(axis=-1) for i in sorted(os.listdir(data_dir))[::6]])
