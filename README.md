@@ -1,4 +1,4 @@
-l# rebound
+# rebound
 Empirical Measurement of the Rebound Effect
 
 ***********
