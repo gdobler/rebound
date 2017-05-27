@@ -25,11 +25,23 @@ def convert_lum(data_dir):
     imgs = imgs.reshape(shape[1],shape[2],shape[0])
     imgs_m = imgs.copy()
 
-    # -- subtract mean along nimg axis and divide by stddev along nimg axis to scale
-    imgs_m -= imgs_m.mean(2,keepdims=True)
+    # -- subtract mean along nimg axis
+    imgs_m -= imgs_m.mean(axis=2,keepdims=True)
 
-    return imgs.std(2)
-    # return imgs/imgs.std(2,keepdims=True) # need to address zero values...
+    # - array of standard devation for each pixel time series
+    img_st = imgs.std(axis=2,keepdims=True)
+
+    # divide x - x.mean by standard deviation
+    # this will create infinite values for zero division (pixels with unchanging luminosity i.e. 0 st. dev)
+    imgs = np.divide(imgs_m,img_st) 
+
+    # boolean mask and set inf values to 0 for further operations
+    img_idx = imgs == np.infty
+
+    imgs[img_idx] = 0
+    
+    return imgs
 
 
 # -- correlate (multiply and mean) with neighboring pixels
+# something like np.dot(imgs[:,:,:],imgs[:,1:,:]
