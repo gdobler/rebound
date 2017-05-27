@@ -26,6 +26,6 @@ for cube in cubes:
 
 # -- write to original .raw format
 opath  = os.path.join(os.environ["REBOUND_WRITE"], oname)
-oname  = "_".join(os.path.split(flist[0]).split("_")[:-1]) + "_stack.raw"
+oname  = "_".join(os.path.split(flist[0])[-1].split("_")[:-1]) + "_stack.raw"
 stack.transpose(2, 0, 1)[..., ::-1] \
-    .flatten().tofile(os.path.join(opath, oname))
+     .flatten().tofile(os.path.join(opath, oname))
