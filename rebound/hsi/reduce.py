@@ -178,3 +178,37 @@ def reduce(data, base, nproc=1, niter=10, outdir="../output/reduced_subample"):
         clean_cols[:,::fac,::fac].tofile(os.path.join(opath,fname))
 
     return
+
+
+def lum_median_reduce(imgL, reg=[800]):
+    """
+    Run a simple median reduction on a luminosity image.
+
+    Parameters
+    ----------
+    imgL : ndarray
+        A 2D luminosity image.
+    reg : list, optional
+        A list of ints that define blocks of rows to treat together.
+
+    Returns
+    -------
+    clean : ndarray
+        A cleaned version of the luminosity image.
+    """
+
+    # -- initialize the clean array
+    clean = imgL.copy().astype(float)
+    
+    # -- first run rows
+    clean -= np.mean(clean, 1, keepdims=True)
+
+    # -- loop through regions for columns
+    regs = [0] + reg + [clean.shape[0]]
+    for ii in range(1, len(regs)):
+        lo = regs[ii-1]
+        hi = regs[ii]
+        clean[lo:hi] -= np.median(clean[lo:hi], 0, keepdims=True)
+
+    return clean
+    
