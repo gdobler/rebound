@@ -23,11 +23,13 @@ def convert_lum(data_dir):
 
     # stack into 3d array nrows, ncols, nimg
     imgs = imgs.reshape(shape[1],shape[2],shape[0])
+    imgs_m = imgs.copy()
 
     # -- subtract mean along nimg axis and divide by stddev along nimg axis to scale
-    imgs -= imgs.mean(2,keepdims=True)
+    imgs_m -= imgs_m.mean(2,keepdims=True)
 
-    return imgs/imgs.std(2,keepdims=True) # need to address zero values...
+    return imgs.std(2)
+    # return imgs/imgs.std(2,keepdims=True) # need to address zero values...
 
 
 # -- correlate (multiply and mean) with neighboring pixels
