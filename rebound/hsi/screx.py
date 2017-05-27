@@ -7,6 +7,11 @@ def pix_corr(img, trav):
     '''
     pix_corr takes an input of the hyperspectral image and the direction in which we want
     to find the correlation
-
+    
+    Args:
+        img    :   cube.data
+        trav   :   string 'right', 'left', 'up', 'down'
     
     '''
+    
+    
