@@ -40,8 +40,16 @@ def convert_lum(data_dir):
 
     imgs[img_idx] = 0
     
-    return imgs
+    # create empty matrix for horizontal correlation
+    cor_lr = np.empty(2160,4095)
 
+    # algorithm to calculate horizontal correlation
+    for i in range(0,2160):
+        for j in range(0,4095):
+            cor_lr = np.dot(imgs[i,j,:],imgs[i,j+1,:].T)/imgs.shape[2]
 
-# -- correlate (multiply and mean) with neighboring pixels
-# something like np.dot(imgs[:,:,:],imgs[:,1:,:]
+    return cor_lr
+
+# note there are some nan values in cor_lr
+# calculate vertical correlation
+# need to identify threshold for pixels of interest
