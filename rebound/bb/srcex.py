@@ -41,7 +41,7 @@ def convert_lum(data_dir):
     imgs[img_idx] = 0
     
     # create empty matrix for horizontal correlation
-    cor_lr = np.empty(2160,4095)
+    cor_lr = np.empty((2160,4095))
 
     # algorithm to calculate horizontal correlation
     for i in range(0,2160):
