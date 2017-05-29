@@ -5,7 +5,10 @@ import numpy as np
 
 def sphere2cart(rad, theta, phi, rad0=0.0, theta0=0.0, phi0=0.0):
     """
-    Convert spherical coordinates to cartesian coordinates.
+    Convert spherical coordinates to cartesian coordinates.  This 
+    calculation can be vectorized in any (but only one) parameter.  For 
+    example, if rad is an ndarray of floats, theta, and phi must be 
+    scalars.
     NOTE: the range of theta is [0, 2pi] and the range of phi is [-pi, pi].
 
     Parameters
