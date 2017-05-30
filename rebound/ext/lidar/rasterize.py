@@ -69,7 +69,8 @@ for ii, fname in enumerate(fnames):
 rast /= cnts + (cnts == 0)
 
 # -- write to output
-params = {"nrow" : nrow, "ncol" : ncol}
+params = {"nrow" : nrow, "ncol" : ncol, "rmin" : mm[0][1], "rmax" : mm[1][1], 
+          "cmin" : mm[0][0], "cmax" : mm[1][0]}
 oname  = os.path.join(os.environ["REBOUND_WRITE"], "rasters", "MN_raster.bin")
 rast.tofile(oname)
 write_header(oname, params)
