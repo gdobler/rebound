@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import numpy as np
 from utils import get_tile_list
 
@@ -22,7 +23,8 @@ nfiles = len(fnames)
 
 # -- read the tiles
 for ii, fname in enumerate(fnames):
-    print("working on tile {0:3} of {1}".format(ii+1, nfiles))
+    print("\rworking on tile {0:3} of {1}".format(ii+1, nfiles)),
+    sys.stdout.flush()
     tile = np.load(fname)
 
     # -- snap to grid
