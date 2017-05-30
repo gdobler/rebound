@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import sys
 import numpy as np
 from utils import read_raster
 from colin_inv import *
@@ -19,7 +20,9 @@ y0     = params[4]
 
 
 # -- initialize an image
-img = np.zeros((1000, 1000), dtype=float)
+nrow = 500
+ncol = 500
+img = np.zeros((nrow, ncol), dtype=float)
 
 
 # -- for each pixel
@@ -29,22 +32,32 @@ img = np.zeros((1000, 1000), dtype=float)
 #    - of those, find the closest
 
 zs = np.arange(0, 1000., 0.25)
-xx, yy = colin_inv(params, 0.0, 0.0, zs)
-
 mm = [[978979.241501, 194479.07369], [1003555.2415, 220149.07369]]
 
-rind = (yy - mm[0][1]).round().astype(int)
-cind = (xx - mm[0][0]).round().astype(int)
+for ii in range(nrow):
+    print("\r{0} : {1}".format(ii+1, nrow)),
+    sys.stdout.flush()
+    for jj in range(ncol):
 
-tind  = (rind > 0) & (cind > 0)
-rind  = rind[tind]
-cind  = cind[tind]
-xx    = xx[tind]
-yy    = yy[tind]
-tall  = rast[rind, cind] > zs[tind]
-dd    = (xx[tall] - x0)**2 + (yy[tall] - y0)**2
-close = np.arange(rind.size)[tall][dd.argmin()]
-index = [rind[close], cind[close]]
+        xx, yy = colin_inv(params, ii - nrow // 2, jj - ncol // 2, zs)
+
+        rind  = (yy - mm[0][1]).round().astype(int)
+        cind  = (xx - mm[0][0]).round().astype(int)
+        tind  = (rind >= 0) & (cind >= 0) & (rind < rast.shape[0]) & \
+            (cind < rast.shape[1])
+        rind  = rind[tind]
+        cind  = cind[tind]
+        xx    = xx[tind]
+        yy    = yy[tind]
+        tall  = rast[rind, cind] > zs[tind]
+        if tall.size == 0:
+            continue
+        if tall.max() == False:
+            continue
+        dd    = (xx[tall] - x0)**2 + (yy[tall] - y0)**2
+        close = np.arange(rind.size)[tall][dd.argmin()]
+        index = [rind[close], cind[close]]
+        img[ii, jj] = dd.min()**0.5
 
 
 
