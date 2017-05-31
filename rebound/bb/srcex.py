@@ -21,7 +21,7 @@ def convert_lum(data_dir):
     imgs = np.array([np.fromfile(os.path.join(data_dir,i),dtype=np.uint8).reshape(2160,4096,3).mean(axis=-1) for i in sorted(os.listdir(data_dir))[::6]])
     time_mean = time.time()
 
-    print "Time to extract data and calculate mean; {}".format(time_mean - start)
+    print "Time to extract data and calculate mean: {}".format(time_mean - start)
 
     shape = imgs.shape
 
@@ -48,8 +48,6 @@ def convert_lum(data_dir):
     print "Time to stack, subtract mean and divide by std, create mask for nan values: {}".format(time_mask-time_mean)
     
     # create empty matrix for horizontal and vertical correlation
-    cor_lr = np.empty((2160,4095))
-    cor_ud = np.empty((2159,4096))
     cor_matrix = np.empty((2160,4096,2))
 
     # algorithm to calculate horizontal and vertical correlation
@@ -61,12 +59,34 @@ def convert_lum(data_dir):
             if i<2159:
                 # up-down correlation across rows
                 cor_matrix[i,j][1] = np.dot(imgs[i,j,:],imgs[i+1,j,:].T)/imgs.shape[2]
+    time_cor = time.time()
+    print "Time to calculate correlation-cube: {}".format(time_cor-time_mask)
+    
+    # mask out negative correlation, and from this
+    # filter to only correlations (in either dimension) above 3 st dvs
+    thresh = cor_matrix[cor_matrix>0].mean() + cor_matrix[cor_matrix>0].std()*3.0
+    print "Correlation threshold is: {}".format(thresh)
+
+    # produces a 3d mask array that expresses True if a pixels rightward or downward correlation is above thresh
+    # nrows by ncols by correlation in both directions (2160,4096,2)
+    cm = cor_matrix > thresh
+    
+    time_final_mask = time.time()
+    final_mask = np.zeros((2160,4096),dtype=bool)
+    # assigns pixel and its neighbor as true (there's a more pythonesque way to do this)
+    for i in range(0,2159):
+        for j in range(0,4095):
+            if cm[i,j,0]:
+                final_mask[i,j] = True
+                final_mask[i,j+1] = True
+            if cm[i,j,1]:
+                final_mask[i,j]=True
+                final_mask[i+1,j]=True
+    
     stop = time.time()
-
-    print "Time to calculate correlation-cube: {}".format(stop-time_mask)
+    print "Time to create final image mask: {}".format(stop-time_final_mask)
+    
     print "Total runtime: {}".format(stop-start)
-    return cor_matrix
+    return final_mask
 
-# note there are some nan values in cor_lr
-# calculate vertical correlation
-# need to identify threshold for pixels of interest
+
