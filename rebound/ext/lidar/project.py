@@ -12,7 +12,7 @@ try:
 except:
     fname = os.path.join(os.environ["REBOUND_WRITE"], "rasters", 
                          "MN_raster.bin")
-    print("readin raster {0}...".format(fname))
+    print("reading raster {0}...".format(fname))
     rast  = read_raster(fname)
 
 
@@ -30,13 +30,14 @@ ncol = 2160
 img = np.zeros((nrow, ncol), dtype=float)
 
 
-# -- for each pixel
-#    - identify the x,y coordinates for all zs
+# -- loop through pixels
+#    - identify the x,y,z coordinates for all rs
 #    - convert x,y coordinates to indices
 #    - find all x,y coordinates for which z is greater than projectws line
 #    - of those, find the closest
 
-zs = np.arange(0, 1500., 0.25)
+#rs = np.arange(0, 50000., 0.5)
+rs = np.arange(0, 50000., 10.)
 mm = [[978979.241501, 194479.07369], [1003555.2415, 220149.07369]]
 
 for ii in range(nrow)[::4]:
@@ -44,7 +45,7 @@ for ii in range(nrow)[::4]:
     sys.stdout.flush()
     for jj in range(ncol)[::4]:
 
-        xx, yy = colin_inv(params, ii - nrow // 2, jj - ncol // 2, zs)
+        xx, yy, zz = colin_inv_rad(params, ii - nrow // 2, jj - ncol // 2, rs)
 
         rind  = (yy - mm[0][1]).round().astype(int)
         cind  = (xx - mm[0][0]).round().astype(int)
@@ -55,7 +56,8 @@ for ii in range(nrow)[::4]:
         cind  = cind[tind]
         xx    = xx[tind]
         yy    = yy[tind]
-        tall  = rast[rind, cind] > zs[tind]
+        zz    = zz[tind]
+        tall  = rast[rind, cind] > zz
         if tall.size == 0:
             continue
         if tall.max() == False:
