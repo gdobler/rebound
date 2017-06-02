@@ -23,10 +23,8 @@ def convert_lum(data_dir):
 
     print "Time to extract data and calculate mean: {}".format(time_mean - start)
 
-    shape = imgs.shape
-
     # stack into 3d array nrows, ncols, nimg
-    imgs = imgs.reshape(shape[1],shape[2],shape[0])
+    imgs = imgs.transpose(1,2,0)
     imgs_m = imgs.copy()
 
     # -- subtract mean along nimg axis
@@ -40,10 +38,10 @@ def convert_lum(data_dir):
     imgs = np.divide(imgs_m,img_st) 
 
     # boolean mask and set inf values to 0 for further operations
-    img_idx = imgs == np.infty
+    img_idx = np.isnan(imgs)
 
     imgs[img_idx] = 0
-    
+
     time_mask = time.time()
     print "Time to stack, subtract mean and divide by std, create mask for nan values: {}".format(time_mask-time_mean)
     
@@ -63,9 +61,8 @@ def convert_lum(data_dir):
     print "Time to calculate correlation-cube: {}".format(time_cor-time_mask)
     
     # mask out negative correlation, and from this
-    # filter to only correlations (in either dimension) above 3 st dvs
-    thresh = cor_matrix[cor_matrix>0].mean() + cor_matrix[cor_matrix>0].std()*3.0
-    print "Correlation threshold is: {}".format(thresh)
+    # filter to only correlations (in either dimension) above thresh
+    thresh = 0.99
 
     # produces a 3d mask array that expresses True if a pixels rightward or downward correlation is above thresh
     # nrows by ncols by correlation in both directions (2160,4096,2)
