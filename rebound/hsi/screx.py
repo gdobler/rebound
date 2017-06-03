@@ -9,7 +9,6 @@ def hyper_pixcorr(path, fname, thresh=0.5):
     hyper_pixcorr takes an input of the hyperspectral image and the threshold
     correlation values and gives an output boolean array of pixels that are 
     correlated with their neighbors.
-
     
     Input Parameters:
     ------------
@@ -25,9 +24,8 @@ def hyper_pixcorr(path, fname, thresh=0.5):
 
     Output:
     ------------
-		final_mask = np.array
-			Boolean array of pixel locations with correlations along both axes
-
+	    final_mask = np.array
+	        Boolean array of pixel locations with correlations along both axes
     '''
         
     # Reading the Raw hyperspectral image
