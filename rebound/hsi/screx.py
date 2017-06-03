@@ -49,3 +49,10 @@ def hyper_pixcorr(path, fname, thresh=0.5):
     # Creating a Mask for all the pixels/sources with correlation greater than threshold
     corr_mask_x = corr_x > thresh
     corr_mask_y = corr_y > thresh
+
+
+    final_mask = np.zeroes
+
+    ##### Code block for merging the x & y correlation masks
+
+    return final_mask
