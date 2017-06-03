@@ -26,7 +26,7 @@ def plot_image(img, mask=None, clim=None, oname=None):
     axf.axis("off")
 
     # -- create filter with alpha channel masked to pixel correlations
-    filt_img = np.zeros((img.shape[0],img.shape[1]),dtype=np.uint8)
+    filt_img = np.zeros((img.shape[0]-1,img.shape[1]-1),dtype=np.uint8)
 
     filt_img[mask] = 255
 
@@ -39,6 +39,6 @@ def plot_image(img, mask=None, clim=None, oname=None):
 
     # -- write to file if desired
     if oname is not None:
-        fig.savefig(oname, clobber=True)
+        fig.savefig(oname, format='png',clobber=True)
 
     return
