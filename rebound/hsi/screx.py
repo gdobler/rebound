@@ -27,8 +27,8 @@ def hyper_pixcorr(path, fname, thresh=0.5):
 	final_mask = np.array
 	    Boolean array of pixel locations with correlations along both axes
 
-	    Note: The dimension of this array is trimmed by 1 row and 1 column than
-	    the input image
+	Note: The dimension of this array is trimmed by 1 row and 1 column than
+	the input image
     '''
         
     # Reading the Raw hyperspectral image
