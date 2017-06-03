@@ -25,9 +25,9 @@ def hyper_pixcorr(path, fname, thresh=0.5):
 
     Output:
     ------------
+		final_mask = np.array
+			Boolean array of pixel locations with correlations along both axes
 
-
-    
     '''
         
     # Reading the Raw hyperspectral image
@@ -41,18 +41,16 @@ def hyper_pixcorr(path, fname, thresh=0.5):
     img /= img.std(0, keepdims=True)
 
     # Computing the correlations between the left-right pixels
-    corr_x = (img[:, :-1] * img[:, 1:]).mean(0)
+    corr_x = (img[:,:-1,:] * img[:,1:,:]).mean(0)
 
     # Computing the correlations between the top-down pixels
-    corr_y = (img[:-1, :] * img[1:, :]).mean(0)
+    corr_y = (img[:,:,:-1] * img[:,:,1:]).mean(0)
 
     # Creating a Mask for all the pixels/sources with correlation greater than threshold
-    corr_mask_x = corr_x > thresh
-    corr_mask_y = corr_y > thresh
+    corr_mask_x = corr_x[:,:-1] > thresh
+    corr_mask_y = corr_y[:-1,:] > thresh
 
-
-    final_mask = np.zeroes
-
-    ##### Code block for merging the x & y correlation masks
+    # Merging the correlation masks in left-right and top-down directions
+    final_mask = corr_mask_x | corr_mask_y
 
     return final_mask
