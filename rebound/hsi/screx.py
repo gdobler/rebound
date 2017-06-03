@@ -4,15 +4,29 @@ import numpy as np
 import os
 import utils
 
-def hyper_pix_corr(path, fname, thresh=0.5):
+def hyper_pixcorr(path, fname, thresh=0.5):
     '''
-    pix_corr takes an input of the hyperspectral image and the direction in which we want
-    to find the correlation
+    hyper_pixcorr takes an input of the hyperspectral image and the threshold
+    correlation values and gives an output boolean array of pixels that are 
+    correlated with their neighbors.
+
     
-    Args:
-        path    :   Path to the directory where hyperspectral images are located
-        fname   :   File name of raw hyperspectral image
-        thresh  :   Correlation threshold for masking the sources
+    Input Parameters:
+    ------------
+
+        path = str
+           Path to the directory where hyperspectral images are located
+
+        fname = str
+           File name of raw hyperspectral image
+
+        thresh = float
+           Threshold correlation value for masking the correlated sources
+
+    Output:
+    ------------
+
+
     
     '''
         
