@@ -4,9 +4,10 @@
 import numpy as np
 import os
 import time
+from scipy.ndimage.filters import gaussian_filter as gf
 
 
-def convert_lum(data_dir, skip=6, thresh=.99, usb=False, sh=None, i_start=None, i_stop=None):
+def convert_lum(data_dir, skip=6, thresh=.99, usb=False, sh=None, i_start=None, i_stop=None, gfilter=None):
     '''
     Converts a series of raw images into a 2-D boolean mask array
     that indicates pixels that are highly correlated based on 
@@ -34,6 +35,17 @@ def convert_lum(data_dir, skip=6, thresh=.99, usb=False, sh=None, i_start=None, 
 
     sh = tuple of ints (default None)
         if not usb, this should be dimensions of raw images (nrow,ncols,rbb=3)
+
+    i_start = int (default None)
+        index of files in source directory to start loading at 
+        (remember only the half files are .raw and half .jpg-->ignored)
+
+    i_stop = int (default None)
+        index of files in source directory to stop loading
+
+    gf = int (default None)
+        if not None, implements a gaussian filter pass with sigma for time dimension set at this value
+
 
     Returns:
     ________
@@ -68,8 +80,10 @@ def convert_lum(data_dir, skip=6, thresh=.99, usb=False, sh=None, i_start=None, 
 
     print "Time to extract data and calculate mean: {}".format(time_mean - start)
 
-    # stack into 3d array nrows, ncols, nimg
-    # imgs = imgs.transpose(1, 2, 0)
+    # run Gaussian filter (options)
+    if gfilter is not None:
+        imgs_sm = gf(1.0 * imgs, (gfilter, 0, 0))
+        imgs = 1.0 * imgs - imgs_sm
 
     # -- subtract mean along nimg axis
     imgs -= imgs.mean(axis=0, keepdims=True)
