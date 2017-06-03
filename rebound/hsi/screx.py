@@ -35,7 +35,7 @@ def hyper_pixcorr(path, fname, thresh=0.5):
     cube = utils.read_hyper(path, fname)
 
     # Storing the hyperspectral image as a memmap for future computations
-    img = 1 * cube.data
+    img = 1.0 * cube.data
 
     # Normalizing the Image
     img -= img.mean(0, keepdims=True)
