@@ -7,23 +7,48 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.ndimage as nd
 import scipy.ndimage.measurements as spm
-import uo_tools as ut
-from cuip.cuip.utils.misc import get_files
+# import uo_tools as ut
+# from cuip.cuip.utils.misc import get_files
 
-def locate_sources(img, hpf=False):
+
+def store_offsets(path, ref):
+    """
+    Reads images from a folder and returns offsets for those images
+    
+    params:
+    path : path of directory which stores all the images
+    ref : reference to catalog
+    
+    """
+    # -- open a csv file
+    csvfile = open("image_offset.csv", "wb")
+    writer = csv.writer(csvfile)
+    
+    # -- reading file one after another and writing the offsets and theta angle to csv
+    for filename in os.listdir(path):
+        img = utils.read_raw(path + filename, usb = True)
+        dr, dc, dtheta = register_rid.register(img, ref = ref )
+        writer.writerow([filename, dr, dc, dtheta])
+    
+    # -- closing the csv
+    csvfile.close()
+
+
+
+def locate_sources(img):
     """
     Extract sources from an image.
     """
 
-    # -- convert to luminosity (high pass filter if desired)
-    hpL = (img if not hpf else ut.high_pass_filter(img, 10)).mean(-1)
+    # -- get average intensity of pixels across rgb channels
+    img_a = img.mean(-1)
 
     # -- get medians and standard deviations of luminosity images
-    med = np.median(hpL)
-    sig = hpL.std()
+    med = np.median(img_a)
+    sig = img_a.std()
     
     # -- get the thresholded images
-    thr = hpL > (med + 5.0*sig)
+    thr = img_a > (med + 5.0*sig)
 
     # -- label the sources
     labs = spm.label(thr)
@@ -34,9 +59,9 @@ def locate_sources(img, hpf=False):
     # -- get the positions of the sources
     ind = (lsz > 25.) & (lsz < 500.) 
 
+    # -- get center of masses for all the labelled sources in the image
     return np.array(spm.center_of_mass(thr, labs[0], 
                                        np.arange(1, labs[1]+1)[ind])).T
-
 
 
 def get_catalog(ref="dobler2015_alt2"):
@@ -86,64 +111,51 @@ def get_catalog(ref="dobler2015_alt2"):
     return rr_cat, cc_cat
 
 
-def find_quads(dist, rr1, cc1, rr_cat, cc_cat, buff=10):
+def find_pot(dist, dcat, buff=10):
+    """
+    Find potential sources in the appropriate distance  ratios
+    """
+    
+    # -- taking total sources
+    src = np.arange(dist.shape[0])
+    dcat   = dcat[dcat>0]
+    
+    # -- get potential sources from total sources
+    for tdist in dcat:
+        tind  = (np.abs(dist - tdist) < buff).any(1)
+        dist = dist[tind]
+        src = src[tind]
+        if tdist == dcat[-1]:
+            return src
+
+def find_quads(dist, rr1, cc1, rr_cat, cc_cat):
     """
     Find quads of sources with the appropriate distance ratios.
     """
 
-    # -- trim rows that do not have that distance distribution
-    pts  = []
-
     # -- get all possible points
     allind = np.arange(dist.shape[0])
-    p0ind  = allind.copy()
-    p1ind  = allind.copy()
-    p2ind  = allind.copy()
-    p6ind  = allind.copy()
-
-    sub    = dist.copy()
-    dcat   = np.sqrt(((rr_cat[0] - rr_cat)**2 + (cc_cat[0] - cc_cat)**2))
-    dcat   = dcat[dcat>0]
-    for tdist in dcat:
-        tind  = (np.abs(sub - tdist) < buff).any(1)
-        sub   = sub[tind]
-        p0ind = p0ind[tind]
-
-    sub    = dist.copy()
-    dcat   = np.sqrt(((rr_cat[1] - rr_cat)**2 + (cc_cat[1] - cc_cat)**2))
-    dcat   = dcat[dcat>0]
-    for tdist in dcat:
-        tind  = (np.abs(sub - tdist) < buff).any(1)
-        sub   = sub[tind]
-        p1ind = p1ind[tind]
-
-    sub    = dist.copy()
-    dcat   = np.sqrt(((rr_cat[2] - rr_cat)**2 + (cc_cat[2] - cc_cat)**2))
-    dcat   = dcat[dcat>0]
-    for tdist in dcat:
-        tind  = (np.abs(sub - tdist) < buff).any(1)
-        sub   = sub[tind]
-        p2ind = p2ind[tind]
-
-
-    sub    = dist.copy()
-    dcat   = np.sqrt(((rr_cat[6] - rr_cat)**2 + (cc_cat[6] - cc_cat)**2))
-    dcat   = dcat[dcat>0]
-    for tdist in dcat:
-        tind  = (np.abs(sub - tdist) < buff).any(1)
-        sub   = sub[tind]
-        p6ind = p6ind[tind]
-
+    
+    # -- get distances between sources in catalog
     dcat0 = np.sqrt(((rr_cat[0] - rr_cat)**2 + (cc_cat[0] - cc_cat)**2))
     dcat1 = np.sqrt(((rr_cat[1] - rr_cat)**2 + (cc_cat[1] - cc_cat)**2))
     dcat2 = np.sqrt(((rr_cat[2] - rr_cat)**2 + (cc_cat[2] - cc_cat)**2))
+    dcat6 = np.sqrt(((rr_cat[6] - rr_cat)**2 + (cc_cat[6] - cc_cat)**2))
+    
+    # -- get potential sources in the image
+    p0ind = find_pot(dist, dcat0)
+    p1ind = find_pot(dist, dcat1)
+    p2ind = find_pot(dist, dcat2)
+    p6ind = find_pot(dist, dcat6)
 
+    # -- get first good set of sources by comparing distance from first source of catalog
     good01 = []
     for ii in p0ind:
         for jj in p1ind:
             if np.abs(dist[ii,jj] - dcat0[1]) < 10:
                 good01.append([ii, jj])
-
+                
+    # -- get second good set of sources by comparing distance from first and second source of catalog
     good012 = []
     for ii,jj in good01:
         for kk in p2ind:
@@ -152,6 +164,8 @@ def find_quads(dist, rr1, cc1, rr_cat, cc_cat, buff=10):
             if flag02 and flag12:
                 good012.append([ii, jj, kk])
 
+    # -- get third good set of sources by comparing distance from first,second and sixth source of catalog
+    # -- need to change a bit, in for loop
     good0126 = []
     for ii,jj,kk in good012:
         for mm in p6ind:
@@ -194,7 +208,8 @@ def register(img, ref="dobler2015_alt2"):
     theta01 = np.arccos((rr1[p0s] - rr1[p1s]) / dist[p0s, p1s])
     theta02 = np.arccos((rr1[p0s] - rr1[p2s]) / dist[p0s, p2s])
     dtheta  = (theta01 - theta02) * 180. / np.pi
-
+    
+    # -- find the delta angle of thr first 2 sources of catalog
     theta01_cat = np.arccos((rr_cat[0] - rr_cat[1]) / dcatm[0, 1])
     theta02_cat = np.arccos((rr_cat[0] - rr_cat[2]) / dcatm[0, 2])
     dtheta_cat  = (theta01_cat - theta02_cat) * 180. / np.pi
@@ -205,7 +220,8 @@ def register(img, ref="dobler2015_alt2"):
     # -- calculate the offset and rotation
     rrr0, ccc0 = rr_cat[np.array([0, 1, 2, 6])], cc_cat[np.array([0, 1, 2, 6])]
     rrr1, ccc1 = rr1[guess], cc1[guess]
-
+    
+    # -- get positions of image sources and catalog sources to know the quadrant they occupy
     roff  = img.shape[0] // 2
     coff  = img.shape[1] // 2
     rrr0 -= roff
@@ -213,6 +229,7 @@ def register(img, ref="dobler2015_alt2"):
     ccc0 -= coff
     ccc1 -= coff
 
+    # -- get the matrix for catalog sources
     mones      = np.zeros(rrr0.size*2+1)
     mones[::2] = 1.0
 
@@ -224,10 +241,12 @@ def register(img, ref="dobler2015_alt2"):
     pm[:,2]    = mones[:-1]
     pm[:,3]    = mones[1:]
 
+    # -- get the matrix for image sources
     bv         = np.zeros([rrr0.size*2])
     bv[::2]    = rrr1
     bv[1::2]   = ccc1
 
+    # -- calculating rotation of image 
     pmTpm = np.dot(pm.T, pm)
     av    = np.dot(np.linalg.inv(pmTpm), np.dot(pm.T, bv))
 
@@ -236,15 +255,6 @@ def register(img, ref="dobler2015_alt2"):
 
     return -dr, -dc, -dtheta # minus sign registers *to* the catalog
 
-
-def get_reference_image():
-    """
-    Return the reference image for the Dobler et al. 2015 catalog.
-    """
-
-    return ut.read_raw(os.path.join(os.environ["CUIP_2013"], "2013", "11", 
-                                    "15", "19.03.48", 
-                                    "oct08_2013-10-25-175504-182135.raw"))
 
 
 def plot_registration(img, ref, params):
@@ -256,6 +266,7 @@ def plot_registration(img, ref, params):
     dr, dc, dt = params
 
     # -- test registration
+    # -- modify
     rot   = img.mean(-1)
     scl1  = ref.mean(-1)
     rot  *= scl1.mean() / rot.mean()
@@ -274,3 +285,5 @@ def plot_registration(img, ref, params):
     plt.show()
 
     return
+
+
