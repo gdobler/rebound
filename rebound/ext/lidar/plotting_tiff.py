@@ -1,27 +1,62 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-# coding: utf-8
-
-import matplotlib.pyplot as plt
 import gdal
+import matplotlib.pyplot as plt
 from gdalconst import *
 
 def get_raster_info(fpath):
-    raster = gdal.Open(fpath, GA_ReadOnly)
-    if raster is None:
+    """
+    Get info from TIF raster
+
+    Parameters
+    ----------
+    fpath : str
+        Full filname (including path) for the TIF raster.
+    """
+
+    # -- open the TIF raster
+    try:
+        raster = gdal.Open(fpath, GA_ReadOnly)
+    except:
         print "Open failed"
-    print 'Driver: ', raster.GetDriver().ShortName,'/', raster.GetDriver().LongName
-    print 'Size is ', raster.RasterXSize,'x',raster.RasterYSize,'x',raster.RasterCount
-    print 'Projection is ', raster.GetProjection()
+        return
+
+    # -- alert the user of useful info
+    print('Driver: {0}/{1}'.format(raster.GetDriver().ShortName,  
+                                   raster.GetDriver().LongName))
+    print('Size is {0}x{1}x{2}'.format(raster.RasterXSize, 
+                                       raster.RasterYSize, raster.RasterCount))
+    print('Projection is {0}'.format(raster.GetProjection()))
+
+    # -- print pixel-space to real-space conversion factors
     geotransform = raster.GetGeoTransform()
-    if not geotransform is None:
-        print 'Origin = (',geotransform[0], ',',geotransform[3],')'
-        print 'Pixel Size = (',geotransform[1], ',',geotransform[5],')'
+    if geotransform is not None:
+        print('Origin = ({0},{1})'.format(geotransform[0], geotransform[3]))
+        print('Pixel Size = ({0},{1})'.format(geotransform[1], 
+                                              geotransform[5]))
+
 
 def get_raster_band(fpath):
-    raster = gdal.Open(fpath, GA_ReadOnly)
-    if raster is None:
+    """
+    Get the elevation for a TIF raster.
+
+    Parameters
+    ----------
+    fpath : str
+        Full filname (including path) for the TIF raster.
+    """
+
+    # -- read the TIF raster
+    try:
+        raster = gdal.Open(fpath, GA_ReadOnly)
+    except:
         print "Open failed"
+
+
+    # -- get the data
     band = raster.GetRasterBand(1)
+
     print 'Band Type=',gdal.GetDataTypeName(band.DataType)
     min = band.GetMinimum()
     max = band.GetMaximum()
@@ -32,6 +67,7 @@ def get_raster_band(fpath):
         print 'Band has ', band.GetOverviewCount(), ' overviews.'
     if not band.GetRasterColorTable() is None:
         print 'Band has a color table with ',     band.GetRasterColorTable().GetCount(), ' entries.'
+
 
 def plot_raster(fpath):
     raster = gdal.Open(fpath, GA_ReadOnly)
