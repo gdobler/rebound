@@ -7,7 +7,7 @@ import time
 from scipy.ndimage.filters import gaussian_filter as gf
 
 
-def convert_lum(data_dir, skip=6, thresh=.99, usb=False, sh=None, i_start=None, i_stop=None, gfilter=None):
+def convert_lum(data_dir, skip=6, thresh=.99, usb=False, sh=None, i_start=900, i_stop=-900, gfilter=None):
     '''
     Converts a series of raw images into a 2-D boolean mask array
     that indicates pixels that are highly correlated based on 
