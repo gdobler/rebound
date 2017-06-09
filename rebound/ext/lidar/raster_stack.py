@@ -2,12 +2,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 import gdal
 import glob
 import numpy as np
 from gdalconst import *
 
-flist = glob.glob('*.TIF')
+fpath = os.path.join(os.environ['REBOUND_DATA'], "data_3d", "DA18_Raster_Files", "DA18_Raster_Files")
+flist = glob.glob('%s*.TIF') % (fpath)
 
 origin = (0, 0)
 result = np.zeros((2048, 2048))
