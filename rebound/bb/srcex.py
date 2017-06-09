@@ -154,3 +154,34 @@ def convert_lum(data_dir, skip=6, thresh=.99, usb=False, sh=None, i_start=900, i
 
     print "Total runtime: {}".format(stop-start)
     return final_mask
+
+
+def agg_src(mask_array):
+    """
+    Takes as input the output of .conver_lum() -- mask array of correlated pixels.
+    Groups them into contiguous groups, assigns unique labels to the groups,
+    Counts number and size of groups <-> light sources.
+    """
+
+    # measurement.label to assign sources
+
+    # measurement.sum to count sources (maybe)
+
+    return # datacube: nrows x ncols x source label
+
+
+def light_curve(source_array, cube):
+    '''
+    Takes as inpout the output of agg_src() and oringial datacube.
+    Averages the luminosity among pixels of each light source
+    to produce lightcurve for each source.
+
+    '''
+
+    # mask datacube with source_array to average luminosity 
+    # of each source, iterating through each image in the series
+
+    # zero out non-source pixels to create sparse cube that maintains
+    # light source spatial coordinates
+
+    return # rank 4 tensor of luminosity values: nrows x ncols x nimgs x 1 (source label)
