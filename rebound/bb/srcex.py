@@ -5,6 +5,7 @@ import numpy as np
 import os
 import time
 from scipy.ndimage.filters import gaussian_filter as gf
+from scipy.ndimage import measurements as mm
 
 
 def convert_lum(data_dir, skip=6, thresh=.99, usb=False, sh=None, i_start=900, i_stop=-900, gfilter=None):
@@ -80,6 +81,8 @@ def convert_lum(data_dir, skip=6, thresh=.99, usb=False, sh=None, i_start=900, i
 
     print "Time to extract data and calculate mean: {}".format(time_mean - start)
 
+    raw_cube = imgs[:,:-1,:-1].copy() # slice off last row and col to match mask array
+
     # run Gaussian filter (options)
     if gfilter is not None:
         imgs_sm = gf(1.0 * imgs, (gfilter, 0, 0))
@@ -153,7 +156,7 @@ def convert_lum(data_dir, skip=6, thresh=.99, usb=False, sh=None, i_start=900, i
     print "Time to create final image mask: {}".format(stop-time_final_mask)
 
     print "Total runtime: {}".format(stop-start)
-    return final_mask
+    return final_mask, raw_cube
 
 
 def agg_src(mask_array):
@@ -163,16 +166,22 @@ def agg_src(mask_array):
     Counts number and size of groups <-> light sources.
     """
 
-    # measurement.label to assign sources
+    # measurements.label to assign sources
+    labels,num_features = mm.label(mask_array.astype(bool))
 
-    # measurement.sum to count sources (maybe)
+    unique, counts = np.unique(labels, return_counts=True)
 
-    return # datacube: nrows x ncols x source label
+    f = np.vectorize(lambda x: int(counts[x-1]))
+
+    label_size = f(labels.astype(int))
+
+    #return np.stack(labels,label_size) # 2d array of labels: nrows x ncols
+    return np.dstack((labels,label_size))
 
 
 def light_curve(source_array, cube):
     '''
-    Takes as inpout the output of agg_src() and oringial datacube.
+    Takes as input the output of agg_src() and oringial datacube.
     Averages the luminosity among pixels of each light source
     to produce lightcurve for each source.
 
