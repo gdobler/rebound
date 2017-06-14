@@ -171,17 +171,17 @@ def agg_src(mask_array):
 
     unique, counts = np.unique(labels, return_counts=True)
 
-    f = np.vectorize(lambda x: int(counts[x-1]))
+    # f = np.vectorize(lambda x: int(counts[x-1]))
 
-    label_size = f(labels.astype(int))
+    # label_size = f(labels.astype(int))
 
-    #return np.stack(labels,label_size) # 2d array of labels: nrows x ncols
-    return np.dstack((labels,label_size))
+    #return np.dstack((labels,label_size)) # nrows x ncols x [label,labelsize]
+    return labels,unique,counts
 
 
-def light_curve(source_array, cube):
+def light_curve(data_dir, skip=6, thresh=.99, usb=False, sh=None, i_start=900, i_stop=-900, gfilter=None):
     '''
-    Takes as input the output of agg_src() and oringial datacube.
+    Takes as input the output of agg_src(): set of labels, labelsize and oringial datacube.
     Averages the luminosity among pixels of each light source
     to produce lightcurve for each source.
 
@@ -189,8 +189,29 @@ def light_curve(source_array, cube):
 
     # mask datacube with source_array to average luminosity 
     # of each source, iterating through each image in the series
+    
+    # idx = np.unique(source_array)
 
-    # zero out non-source pixels to create sparse cube that maintains
-    # light source spatial coordinates
+    mask,cube = convert_lum(data_dir, skip, thresh, usb, sh, i_start, i_stop, gfilter)
 
-    return # rank 4 tensor of luminosity values: nrows x ncols x nimgs x 1 (source label)
+    labels,unique,counts = agg_src(mask)
+
+    source_ts = []
+
+    for i in range(0,cube.shape[0]-1):
+        src_sum = mm.sum(cube[i,:,:],labels,index=unique[1:])
+        source_ts.append(src_sum*1.0/counts[1:])
+
+    class output():
+        def __init__(self):
+            self.fpath    = data_dir
+            self.cube     = cube
+            self.mask     = mask
+            self.labels   = labels
+            self.unique   = unique
+            self.counts   = counts
+            self.curves   = np.stack(source_ts)
+
+    # returns array of average luminosity of light source over time:
+    #nimgs x nlightsources
+    return output()
