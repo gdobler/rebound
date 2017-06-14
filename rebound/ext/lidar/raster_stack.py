@@ -43,6 +43,7 @@ def get_origin_minmax(flist):
 fpattern = os.path.join(os.environ['REBOUND_DATA'], "data_3d")
 fpath = "%s/*/*.TIF" % (fpattern)
 flist = glob.glob(fpath)
+flist = [i for i in flist if "DA19" not in i]
 nfiles = len(flist)
 
 # -- initialize the full raster
@@ -55,13 +56,15 @@ result  = np.zeros((nrow, ncol), dtype=float)
 
 
 # -- go through the tiles and make full raster
-for fname in sorted(flist):
+for ii, fname in enumerate(sorted(flist)):
+    print("\rtile {0:4} of {1:4}...".format(ii + 1, nfiles)), 
+    sys.stdout.flush()
     tile = gdal.Open(fname, GA_ReadOnly)
     geo  = tile.GetGeoTransform()
     tile_origin = geo[0], geo[3]
     raster = tile.ReadAsArray()
 
-    rind = int(tile_origin[1] - ylo)
+    rind = result.shape[0] - 2048 - int(tile_origin[1] - ylo)
     cind = int(tile_origin[0] - xlo)
 
     result[rind:rind + 2048, cind:cind + 2048] = raster
