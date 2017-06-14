@@ -40,10 +40,8 @@ def get_origin_minmax(flist):
 
 
 # -- get the list of tile files
-fpattern = os.path.join(os.environ['REBOUND_DATA'], "data_3d", 
-                        "DA18_Raster_Files", "DA18_Raster_Files", 
-                        "DA18RasterTile")
-fpath = "%s*.TIF" % (fpattern)
+fpattern = os.path.join(os.environ['REBOUND_DATA'], "data_3d")
+fpath = "%s/*/*.TIF" % (fpattern)
 flist = glob.glob(fpath)
 nfiles = len(flist)
 
@@ -56,37 +54,21 @@ ncol    = nx_tile * 2048
 result  = np.zeros((nrow, ncol), dtype=float)
 
 
-# -- test on a tile
-fname = sorted(flist)[30]
-ds = gdal.Open(fname, GA_ReadOnly)
-geotransform = ds.GetGeoTransform()
-tile_origin = geotransform[0], geotransform[3]
-raster = ds.ReadAsArray()
+# -- go through the tiles and make full raster
+for fname in sorted(flist):
+    tile = gdal.Open(fname, GA_ReadOnly)
+    geo  = tile.GetGeoTransform()
+    tile_origin = geo[0], geo[3]
+    raster = tile.ReadAsArray()
 
-rind = int(tile_origin[1] - ylo)
-cind = int(tile_origin[0] - xlo)
+    rind = int(tile_origin[1] - ylo)
+    cind = int(tile_origin[0] - xlo)
 
-result[rind:rind + 2048, cind:cind + 2048] = raster
+    result[rind:rind + 2048, cind:cind + 2048] = raster
 
-origin = (0, 0)
-origins = []
-
-for ii, fname in enumerate((sorted(flist))):
-    print("\rreading {0} of {1} tiles...".format(ii + 1, nfiles)),
-    sys.stdout.flush()
-    ds = gdal.Open(fname, GA_ReadOnly)
-    geotransform = ds.GetGeoTransform()
-    tile_origin = geotransform[0], geotransform[3]
-#    raster = ds.ReadAsArray()
-    # if ii == 0:
-    #     result = raster.copy()
-    # elif tile_origin[0] == origin[0] + 2048 and tile_origin[1] == origin[1]: 
-    #     result = np.hstack((result, raster))
-    # elif tile_origin[0] == origin[0] and tile_origin[1] == origin[1] - 2048: 
-    #     result = np.vstack((result, raster))
-    # else:
-    #     pass
-    origin = tile_origin
-    origins.append(tile_origin)
-
-#print result.shape
+# -- write output to binary file
+params = {"nrow" : nrow, "ncol" : ncol, "rmin" : ylo, "rmax" : yhi, 
+          "cmin" : xlo, "cmax" : xhi}
+oname  = os.path.join(os.environ["REBOUND_WRITE"], "rasters", "BK_raster.bin")
+result.tofile(oname)
+write_header(oname, params)
