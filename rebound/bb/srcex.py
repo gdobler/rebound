@@ -199,8 +199,9 @@ def light_curve(data_dir, skip=6, thresh=.99, usb=False, sh=None, i_start=900, i
     source_ts = []
 
     for i in range(0,cube.shape[0]-1):
-        src_sum = mm.sum(cube[i,:,:],labels,index=unique[1:])
+        src_sum = mm.sum(cube[i,:,:]*1.0,labels,index=unique[1:])
         source_ts.append(src_sum*1.0/counts[1:])
+        # source_ts.append(src_sum*1.0)
 
     class output():
         def __init__(self):
