@@ -141,8 +141,8 @@ def light_curve(data_dir, step=5, thresh=.50, bk=True, i_start=900, i_stop=-900,
     print "Aggregate light source pixel intensities and create time series array..."
     source_ts = []
 
-    for i in range(0, cube.shape[0]-1):
-        src_sum = mm.sum(cube[i, :, :]*1.0, labels, index=unique[1:])
+    for i in range(0, img_cube.shape[0]-1):
+        src_sum = mm.sum(img_cube[i, :, :]*1.0, labels, index=unique[1:])
         source_ts.append(src_sum*1.0/counts[1:])
         # source_ts.append(src_sum*1.0)
 
@@ -153,8 +153,8 @@ def light_curve(data_dir, step=5, thresh=.50, bk=True, i_start=900, i_stop=-900,
 
         def __init__(self):
             self.fpath = data_dir
-            self.cube = cube
-            self.mask = mask
+            self.cube = img_cube
+            self.mask = mask_array
             self.labels = labels
             self.unique = unique
             self.counts = counts
