@@ -128,6 +128,7 @@ def light_curve(data_dir, step=5, thresh=.50, bk=True, i_start=900, i_stop=-900,
     mask_array, img_cube = create_mask(
         data_dir, step, thresh, bk, i_start, i_stop, gfilter)
 
+    time_label_st = time.time()
     print "Labeling light sources..."
 
     # measurements.label to assign sources
@@ -137,15 +138,14 @@ def light_curve(data_dir, step=5, thresh=.50, bk=True, i_start=900, i_stop=-900,
 
     # labels,unique,counts = agg_src(mask)
     time_label = time.time()
-    print "Time to label: {}".format(time_label - start)
+    print "Time to label: {}".format(time_label - time_label_st)
     print "Aggregate light source pixel intensities and create time series array..."
     source_ts = []
 
     for i in range(0, img_cube.shape[0]-1):
         src_sum = mm.sum(img_cube[i, :, :]*1.0, labels, index=unique[1:])
         source_ts.append(src_sum*1.0/counts[1:])
-        # source_ts.append(src_sum*1.0)
-
+    
     time_output = time.time()
     print "Time to create time series array: {}".format(time_output - time_label)
 
