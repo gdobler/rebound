@@ -59,32 +59,31 @@ def hyper_pixcorr(path, fname, thresh=0.5):
 
 def sptr_mean(path, fname, boolean_mask):
 	'''
-    sptr_mean takes an input of the hyperspectral image and the boolean array
-    from hyper_pixcorr function to give an output image with mean spectral intensities
-    across the sources in each spectral channel
-    
-    Input Parameters:
-    ------------
+	sptr_mean takes an input of the hyperspectral image and the boolean array
+	from hyper_pixcorr function to give an output image with mean spectral intensities
+	across the sources in each spectral channel
 
-        path = str
-           Path to the directory where hyperspectral images are located
+	Input Parameters:
+	------------
+	path = str
+		Path to the directory where hyperspectral images are located
 
-        fname = str
-           File name of raw hyperspectral image
+	fname = str
+		File name of raw hyperspectral image
 
-        boolean_mask = float
-           Output boolean mask of sources from hyper_pixcorr function
+	boolean_mask = float
+		Output boolean mask of sources from hyper_pixcorr function
 
-    Output:
-    ------------
-	    sprt_mean_image = np.memmap
-	    sptr_mean_image is a hyperspectral image (3-D array) with mean spectral 
-	    intensities across the sources in each spectral channel
+	Output:
+	------------
+	sprt_mean_image = np.memmap
+		sptr_mean_image is a hyperspectral image (3-D array) with mean spectral 
+		intensities across the sources in each spectral channel
 
 	'''
-        
-	# Reading the Raw hyperspectral image
-    cube = utils.read_hyper(path, fname)
 
-    # Storing the hyperspectral image as a memmap for future computations
-    img = 1.0 * cube.data
+	# Reading the Raw hyperspectral image
+	cube = utils.read_hyper(path, fname)
+
+	# Storing the hyperspectral image as a memmap for future computations
+	img = 1.0 * cube.data
