@@ -142,12 +142,30 @@ def light_curve(data_dir, step=5, thresh=.50, bk=True, i_start=900, i_stop=-900,
     print "Aggregate light source pixel intensities and create time series array..."
     source_ts = []
 
-    for i in range(0, img_cube.shape[0]-1):
+    for i in range(0, img_cube.shape[0]):
         src_sum = mm.sum(img_cube[i, :, :]*1.0, labels, index=unique[1:])
         source_ts.append(src_sum*1.0/counts[1:])
+
+    # stack sequence of time series into 2-d array time period x light source
+    ts_array = np.stack(source_ts)
+
+    time_ts_cube = time.time()
+    print "Time to create time series array: {}".format(time_ts_cube - time_label)
     
+    print "broadcasting times series array to pixel image coordinates..."
+    
+    # broadcast timeseries of light sources into original image array (
+    # NOTE: need to vectorize this
+
+    ts_cube = np.zeros(img_cube.shape)
+    for i in range(0,ts_cube.shape[0]):
+        for j in range(0,ts_cube.shape[1]):
+            if labels[i,j] !=0:
+                ts_cube[:,i,j] = ts_array[:,labels[i,j]]
+
+
     time_output = time.time()
-    print "Time to create time series array: {}".format(time_output - time_label)
+    print "Time to create time series cube: {}".format(time_output - time_ts_cube)
 
     class output():
 
@@ -158,7 +176,8 @@ def light_curve(data_dir, step=5, thresh=.50, bk=True, i_start=900, i_stop=-900,
             self.labels = labels
             self.unique = unique
             self.counts = counts
-            self.curves = np.stack(source_ts)
+            self.ts = ts_array
+            self.curves = ts_cube
 
     end = time.time()
     print "Total runtime: {}".format(end - start)
