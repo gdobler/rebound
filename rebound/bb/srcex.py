@@ -4,8 +4,63 @@
 import numpy as np
 import os
 import time
+import matplotlib.pyplot as plt
 from scipy.ndimage.filters import gaussian_filter as gf
 from scipy.ndimage import measurements as mm
+
+def find_night(data_dir,step=100):
+    '''
+    Extract files and plots avg luminosity. 
+    Upon click, prints file number (to indicate where to start loading)
+    Upon release, prints file number (to indicate where to stop loading)
+    '''
+    def vline_st(event):
+        if event.inaxes == ax:
+            cind = int(event.xdata)
+
+            ax.axvline(cind,color='g')
+               
+            ax.set_title("File #: {0}".format(cind))
+
+            fig.canvas.draw()
+
+            print "Start at file #: {}".format(cind*step)
+
+    def vline_end(event):
+        if event.inaxes == ax:
+            cind = int(event.xdata)
+
+            ax.axvline(cind,color='r')
+               
+            ax.set_title("File #: {0}".format(cind))
+
+            fig.canvas.draw()
+
+            print "End at file #: {}".format(cind*step)
+
+
+    lum_list = []
+    raw_name_list = []
+
+    for i in sorted(os.listdir(data_dir)):
+        if i.split('.')[-1] == 'raw':
+            raw_name_list.append(i)
+
+    for i in raw_name_list[::step]:
+            lum_list.append(np.memmap(os.path.join(data_dir, i), np.uint8, mode="r"))
+
+    lums = np.array(lum_list,dtype='float64').mean(1)
+
+    # -- set up the plots
+    fig,ax = plt.subplots(1,figsize=(15, 5))
+    im = ax.plot(lums)
+
+    fig.canvas.draw()
+    # fig.canvas.mpl_connect("motion_notify_event", update_spec)
+    fig.canvas.mpl_connect('button_press_event', vline_st)
+    fig.canvas.mpl_connect('button_release_event', vline_end)
+    plt.show()
+
 
 
 def create_mask(data_dir, step, thresh, bk, i_start, i_stop, gfilter):
@@ -55,9 +110,14 @@ def create_mask(data_dir, step, thresh, bk, i_start, i_stop, gfilter):
     if bk:
         sh = (3072, 4096)
         imgs_list = []
-        for i in sorted(os.listdir(data_dir))[i_start:i_stop:step]:
+        raw_name_list = []
+        for i in sorted(os.listdir(data_dir)):
             if i.split('.')[-1] == 'raw':
-                imgs_list.append(np.memmap(os.path.join(
+                raw_name_list.append(i)
+
+
+        for i in raw_name_list[i_start:i_stop:step]:
+            imgs_list.append(np.memmap(os.path.join(
                     data_dir, i), np.uint8, mode="r").reshape(sh[0], sh[1]))
         imgs = np.array(imgs_list, dtype='float64')
 
@@ -65,6 +125,7 @@ def create_mask(data_dir, step, thresh, bk, i_start, i_stop, gfilter):
         sh = (2160, 4096, 3)
         imgs = np.array([np.fromfile(os.path.join(data_dir, i), dtype=np.uint8).reshape(
             sh[0], sh[1], sh[2]).mean(axis=-1) for i in sorted(os.listdir(data_dir))[::step]])
+
 
     # slice off last row and col to match mask array
     img_cube = imgs[:, :-1, :-1].copy()
