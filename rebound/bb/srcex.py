@@ -127,18 +127,13 @@ def light_curve(data_dir, step=5, thresh=.50, bk=True, i_start=900, i_stop=-900,
     # create mask array
     mask_array, img_cube = create_mask(
         data_dir, step, thresh, bk, i_start, i_stop, gfilter)
-
-    time_label_st = time.time()
-    print "Labeling light sources..."
-
+    
+    time_label = time.time()
     # measurements.label to assign sources
     labels, num_features = mm.label(mask_array.astype(bool))
 
     unique, counts = np.unique(labels, return_counts=True)
 
-    # labels,unique,counts = agg_src(mask)
-    time_label = time.time()
-    print "Time to label: {}".format(time_label - time_label_st)
     print "Aggregate light source pixel intensities and create time series array..."
     source_ts = []
 
@@ -152,16 +147,16 @@ def light_curve(data_dir, step=5, thresh=.50, bk=True, i_start=900, i_stop=-900,
     time_ts_cube = time.time()
     print "Time to create time series array: {}".format(time_ts_cube - time_label)
     
-    print "broadcasting times series array to pixel image coordinates..."
+    print "Broadcasting times series array to pixel image coordinates..."
     
     # broadcast timeseries of light sources into original image array (
     # NOTE: need to vectorize this
 
     ts_cube = np.zeros(img_cube.shape)
-    for i in range(0,ts_cube.shape[0]):
-        for j in range(0,ts_cube.shape[1]):
+    for i in range(0,ts_cube.shape[1]):
+        for j in range(0,ts_cube.shape[2]):
             if labels[i,j] !=0:
-                ts_cube[:,i,j] = ts_array[:,labels[i,j]]
+                ts_cube[:,i,j] = ts_array[:,labels[i,j]-1]
 
 
     time_output = time.time()
