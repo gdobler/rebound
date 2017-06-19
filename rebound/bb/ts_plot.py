@@ -6,28 +6,27 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def plot_curves(curves_obj, light_source, img=None, clim=None, oname=None):
+def plot_curves(curves_obj, light_source=None, img=None, clim=None, oname=None):
     """
     Plot light curves
     """
 
-    # -- set up the plot
-    # xs = 5.0
-    # ys = xs * float(mask.shape[0]) / float(mask.shape[1])
-    # fig = plt.figure(figsize=(xs, ys))
-    # fig.subplots_adjust(0, 0, 1, 1)
-    # ax1,ax2 = ax
-    # ax1.axis("off")
-    # ax2.axis("off")
+    def update_spec(event):
+        if event.inaxes == axim:
+            rind = int(event.ydata)
+            cind = int(event.xdata)
+
+            tspec = curves_obj.curves[:, rind, cind]
+            linsp.set_data(np.asarray(np.arange(curves_obj.curves.shape[0])),curves_obj.curves[:, rind, cind])
+            axlc.set_ylim(tspec.min(), tspec.max() * 1.1)
+            axlc.set_title("({0},{1})".format(rind, cind))
+
+            fig.canvas.draw()
 
     # -- plot mask
-    filt_img = np.zeros(curves_obj.labels.shape,dtype=np.uint8)
-    filt_img[curves_obj.labels==light_source] = 255
+    mask = np.zeros(curves_obj.mask.shape,dtype=np.uint8)
+    mask[curves_obj.mask] = 255
 
-
-    # -- show the image
-    # im = axr.imshow(img, cmap='gist_gray',clim=clim)
-    # mask = plt.imshow(filt_img,cmap='gist_gray',clim=clim)
 
     # -- set up the plot
     fig, ax = plt.subplots(2, 1, figsize=(10, 10))
@@ -35,14 +34,15 @@ def plot_curves(curves_obj, light_source, img=None, clim=None, oname=None):
 
     # -- show the image
     axim.axis("off")
-    im = axim.imshow(filt_img,cmap='gist_gray',clim=clim)
-    axim.set_title('Featured Light Source')
+    im = axim.imshow(mask,cmap='gist_gray',clim=clim)
+    axim.set_title('Mask Image')
 
     # -- show the lightcurve
-    # axlc.set_xlim(curves_obj.curves[:,light_source], cube.waves[-1])
-    linsp, = axlc.plot(curves_obj.curves[:,light_source])
+    axlc.set_xlim(0, curves_obj.curves.shape[0])
+    linsp, = axlc.plot(np.asarray(np.arange(curves_obj.curves.shape[0])),curves_obj.curves[:, 0, 0])
 
     fig.canvas.draw()
+    fig.canvas.mpl_connect("motion_notify_event", update_spec)
 
     plt.show()
 

@@ -4,6 +4,7 @@
 import numpy as np
 import os
 import time
+import pickle
 import matplotlib.pyplot as plt
 from scipy.ndimage.filters import gaussian_filter as gf
 from scipy.ndimage import measurements as mm
@@ -63,7 +64,7 @@ def find_night(data_dir,step=100):
 
 
 
-def create_mask(data_dir, step, thresh, bk, i_start, i_stop, gfilter):
+def create_mask(data_dir, step, thresh, bk, file_start, file_stop, gfilter):
     '''
     Converts a series of raw images into a 2-D boolean mask array
     that indicates pixels that are highly correlated based on 
@@ -116,9 +117,9 @@ def create_mask(data_dir, step, thresh, bk, i_start, i_stop, gfilter):
                 raw_name_list.append(i)
 
 
-        for i in raw_name_list[i_start:i_stop:step]:
-            imgs_list.append(np.memmap(os.path.join(
-                    data_dir, i), np.uint8, mode="r").reshape(sh[0], sh[1]))
+        for i in raw_name_list[file_start:file_stop:step]:
+            imgs_list.append(np.fromfile(os.path.join(
+                    data_dir, i), dtype=np.uint8).reshape(sh[0], sh[1]))
         imgs = np.array(imgs_list, dtype='float64')
 
     else:
@@ -157,6 +158,7 @@ def create_mask(data_dir, step, thresh, bk, i_start, i_stop, gfilter):
 
     time_standard = time.time()
     print "Time to standardize: {}".format(time_standard-time_standard_st)
+
     print "Calculating correlation coefficients..."
 
     # matrix mult to get horizontal and vertical correlation
@@ -177,7 +179,7 @@ def create_mask(data_dir, step, thresh, bk, i_start, i_stop, gfilter):
     return mask_array, img_cube
 
 
-def light_curve(data_dir, step=5, thresh=.50, bk=True, i_start=900, i_stop=-900, gfilter=None):
+def light_curve(data_dir, step=5, thresh=.50, bk=True, file_start=300, file_stop=3100, gfilter=None):
     '''
     Calls create_mask() and uses output to label pixels to unique light sources.
     Averages the luminosity among pixels of each light source
@@ -187,7 +189,7 @@ def light_curve(data_dir, step=5, thresh=.50, bk=True, i_start=900, i_stop=-900,
 
     # create mask array
     mask_array, img_cube = create_mask(
-        data_dir, step, thresh, bk, i_start, i_stop, gfilter)
+        data_dir, step, thresh, bk, file_start, file_stop, gfilter)
     
     time_label = time.time()
     # measurements.label to assign sources
