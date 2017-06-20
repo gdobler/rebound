@@ -40,40 +40,45 @@ def get_origin_minmax(flist):
     return xmin, ymin, xmax, ymax
 
 
-# -- get the list of tile files
-fpattern = os.path.join(os.environ['REBOUND_DATA'], "data_3d")
-fpath    = "%s/*/*.TIF" % (fpattern)
-flist    = sorted(glob.glob(fpath))
-nfiles   = len(flist)
+if __name__ == "__main__":
 
-# -- initialize the full raster
-print("initializing raster...")
-xlo, ylo, xhi, yhi = get_origin_minmax(flist)
-nrow   = int(yhi - ylo) + 2048 + 1
-ncol   = int(xhi - xlo) + 2048 + 1
-result = np.zeros((nrow, ncol), dtype=float)
-
-
-# -- go through the tiles and make full raster
-sub = np.zeros((2048, 2048), dtype=float)
-for ii, fname in enumerate(sorted(flist)):
-    print("\rtile {0:4} of {1:4}...".format(ii + 1, nfiles)), 
-    sys.stdout.flush()
-    tile = gdal.Open(fname, GA_ReadOnly)
-    geo  = tile.GetGeoTransform()
-    tile_origin = geo[0], geo[3]
-    raster = tile.ReadAsArray()
-
-    rind = result.shape[0] - 2048 - int(tile_origin[1] - ylo)
-    cind = int(tile_origin[0] - xlo)
-
-    sub[...] = result[rind:rind + 2048, cind:cind + 2048]
-
-    result[rind:rind + 2048, cind:cind + 2048] = np.maximum(raster, sub)
-
-# -- write output to binary file
-params = {"nrow" : nrow, "ncol" : ncol, "rmin" : ylo, "rmax" : yhi, 
-          "cmin" : xlo, "cmax" : xhi}
-oname  = os.path.join(os.environ["REBOUND_WRITE"], "rasters", "BK_raster.bin")
-result.tofile(oname)
-write_header(oname, params)
+    # -- get the list of tile files
+    fpattern = os.path.join(os.environ['REBOUND_DATA'], "data_3d")
+    fpath    = "%s/*/*.TIF" % (fpattern)
+    flist    = sorted(glob.glob(fpath))
+    nfiles   = len(flist)
+    
+    
+    # -- initialize the full raster
+    xlo, ylo, xhi, yhi = get_origin_minmax(flist)
+    nrow   = int(yhi - ylo) + 2048 + 1
+    ncol   = int(xhi - xlo) + 2048 + 1
+    print("initializing raster...")
+    result = np.zeros((nrow, ncol), dtype=float)
+    
+    
+    # -- go through the tiles and make full raster
+    sub = np.zeros((2048, 2048), dtype=float)
+    for ii, fname in enumerate(sorted(flist)):
+        print("\rtile {0:4} of {1:4}...".format(ii + 1, nfiles)), 
+        sys.stdout.flush()
+        tile = gdal.Open(fname, GA_ReadOnly)
+        geo  = tile.GetGeoTransform()
+        tile_origin = geo[0], geo[3]
+        raster = tile.ReadAsArray()
+    
+        rind = result.shape[0] - 2048 - int(tile_origin[1] - ylo)
+        cind = int(tile_origin[0] - xlo)
+    
+        sub[...] = result[rind:rind + 2048, cind:cind + 2048]
+    
+        result[rind:rind + 2048, cind:cind + 2048] = np.maximum(raster, sub)
+    
+    
+    # -- write output to binary file
+    params = {"nrow" : nrow, "ncol" : ncol, "rmin" : ylo, "rmax" : yhi, 
+              "cmin" : xlo, "cmax" : xhi}
+    oname  = os.path.join(os.environ["REBOUND_WRITE"], "rasters", 
+                          "BK_raster.bin")
+    result.tofile(oname)
+    write_header(oname, params)
