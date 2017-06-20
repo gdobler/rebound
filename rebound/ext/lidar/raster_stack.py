@@ -42,16 +42,15 @@ def get_origin_minmax(flist):
 # -- get the list of tile files
 fpattern = os.path.join(os.environ['REBOUND_DATA'], "data_3d")
 fpath = "%s/*/*.TIF" % (fpattern)
-flist = glob.glob(fpath)
-flist = [i for i in flist if "DA19" not in i]
+#flist = glob.glob(fpath)
+flist = sorted(glob.glob(fpath))
+#flist = [i for i in flist if "DA18" not in i]
 nfiles = len(flist)
 
 # -- initialize the full raster
 xlo, ylo, xhi, yhi = get_origin_minmax(flist)
-nx_tile = int((xhi - xlo) / 2048) + 1
-ny_tile = int((yhi - ylo) / 2048) + 1
-nrow    = ny_tile * 2048
-ncol    = nx_tile * 2048
+nrow    = int(yhi - ylo) + 2048 + 1
+ncol    = int(xhi - xlo) + 2048 + 1
 result  = np.zeros((nrow, ncol), dtype=float)
 
 
