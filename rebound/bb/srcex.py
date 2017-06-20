@@ -50,7 +50,7 @@ def find_night(data_dir,step=100):
     for i in raw_name_list[::step]:
             lum_list.append(np.memmap(os.path.join(data_dir, i), np.uint8, mode="r"))
 
-    lums = np.array(lum_list,dtype='float64').mean(1)
+    lums = np.array(lum_list,dtype='float32').mean(1)
 
     # -- set up the plots
     fig,ax = plt.subplots(1,figsize=(15, 5))
@@ -120,7 +120,7 @@ def create_mask(data_dir, step, thresh, bk, file_start, file_stop, gfilter):
         for i in raw_name_list[file_start:file_stop:step]:
             imgs_list.append(np.fromfile(os.path.join(
                     data_dir, i), dtype=np.uint8).reshape(sh[0], sh[1]))
-        imgs = np.array(imgs_list, dtype='float64')
+        imgs = np.array(imgs_list,dtype=np.float32)
 
     else:
         sh = (2160, 4096, 3)
@@ -138,8 +138,8 @@ def create_mask(data_dir, step, thresh, bk, file_start, file_stop, gfilter):
     # run Gaussian filter (options)
     if gfilter is not None:
         print "Running Gaussian filter..."
-        imgs_sm = gf(1.0 * imgs, (gfilter, 0, 0))
-        imgs = 1.0 * imgs - imgs_sm
+        imgs_sm = gf(imgs.astype(np.float32), (gfilter, 0, 0))
+        imgs = imgs.astype(np.float32) - imgs_sm
 
     time_standard_st = time.time()
     print "Standardizing luminosity along time domain..."
@@ -201,8 +201,8 @@ def light_curve(data_dir, step=5, thresh=.50, bk=True, file_start=300, file_stop
     source_ts = []
 
     for i in range(0, img_cube.shape[0]):
-        src_sum = mm.sum(img_cube[i, :, :]*1.0, labels, index=unique[1:])
-        source_ts.append(src_sum*1.0/counts[1:])
+        src_sum = mm.sum(img_cube[i, :, :].astype(np.float32), labels, index=unique[1:])
+        source_ts.append(src_sum.astype(np.float32)/counts[1:])
 
     # stack sequence of time series into 2-d array time period x light source
     ts_array = np.stack(source_ts)
@@ -221,7 +221,7 @@ def light_curve(data_dir, step=5, thresh=.50, bk=True, file_start=300, file_stop
             if labels[i,j] !=0:
                 ts_cube[:,i,j] = ts_array[:,labels[i,j]-1]
 
-
+    ts_cube = ts_cube.astype(np.float32)
     time_output = time.time()
     print "Time to create time series cube: {}".format(time_output - time_ts_cube)
 
