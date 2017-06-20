@@ -8,6 +8,7 @@ import gdal
 import glob
 import numpy as np
 from gdalconst import *
+from rasterize import write_header
 
 def get_origin_minmax(flist):
     """
@@ -41,20 +42,20 @@ def get_origin_minmax(flist):
 
 # -- get the list of tile files
 fpattern = os.path.join(os.environ['REBOUND_DATA'], "data_3d")
-fpath = "%s/*/*.TIF" % (fpattern)
-#flist = glob.glob(fpath)
-flist = sorted(glob.glob(fpath))
-#flist = [i for i in flist if "DA18" not in i]
-nfiles = len(flist)
+fpath    = "%s/*/*.TIF" % (fpattern)
+flist    = sorted(glob.glob(fpath))
+nfiles   = len(flist)
 
 # -- initialize the full raster
+print("initializing raster...")
 xlo, ylo, xhi, yhi = get_origin_minmax(flist)
-nrow    = int(yhi - ylo) + 2048 + 1
-ncol    = int(xhi - xlo) + 2048 + 1
-result  = np.zeros((nrow, ncol), dtype=float)
+nrow   = int(yhi - ylo) + 2048 + 1
+ncol   = int(xhi - xlo) + 2048 + 1
+result = np.zeros((nrow, ncol), dtype=float)
 
 
 # -- go through the tiles and make full raster
+sub = np.zeros((2048, 2048), dtype=float)
 for ii, fname in enumerate(sorted(flist)):
     print("\rtile {0:4} of {1:4}...".format(ii + 1, nfiles)), 
     sys.stdout.flush()
@@ -66,7 +67,9 @@ for ii, fname in enumerate(sorted(flist)):
     rind = result.shape[0] - 2048 - int(tile_origin[1] - ylo)
     cind = int(tile_origin[0] - xlo)
 
-    result[rind:rind + 2048, cind:cind + 2048] = raster
+    sub[...] = result[rind:rind + 2048, cind:cind + 2048]
+
+    result[rind:rind + 2048, cind:cind + 2048] = np.maximum(raster, sub)
 
 # -- write output to binary file
 params = {"nrow" : nrow, "ncol" : ncol, "rmin" : ylo, "rmax" : yhi, 
