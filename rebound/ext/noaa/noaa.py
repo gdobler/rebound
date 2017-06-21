@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.ndimage.filters import gaussian_filter as gf
-from .config import HYSS_ENVIRON
 
 
 class HyperNoaa(object):
@@ -35,7 +34,8 @@ class HyperNoaa(object):
     def __init__(self, fpath=None):
 
         # -- defaults
-        fpath = fpath if fpath else HYSS_ENVIRON['NOAA_DPATH']
+        fpath = fpath if fpath else os.path.join(os.getenv("REBOUND_DATA"), 
+                                                 "noaa")
 
         # -- set the data path and file list, and initialize the container
         self.fpath = fpath
