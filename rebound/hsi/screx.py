@@ -2,6 +2,7 @@
 import numpy as np
 import os
 import utils
+import scipy.ndimage.measurements as mm
 
 def hyper_pixcorr(path, fname, thresh=0.5):
     '''
@@ -71,15 +72,13 @@ def sptr_mean(path, fname, boolean_mask):
 	fname = str
 		File name of raw hyperspectral image
 
-	boolean_mask = float
+	boolean_mask = np.array
 		Output boolean mask of sources from hyper_pixcorr function
 
 	Output:
 	------------
-	sprt_mean_image = np.memmap
-		sptr_mean_image is a hyperspectral image (3-D array) with mean spectral 
-		intensities across the sources in each spectral channel
-
+	src_sptr_mean = np.array
+		Mean Spectrum of sources across corresponsing source pixels
 	'''
 
 	# Reading the Raw hyperspectral image
@@ -87,3 +86,20 @@ def sptr_mean(path, fname, boolean_mask):
 
 	# Storing the hyperspectral image as a memmap for future computations
 	img = 1.0 * cube.data
+
+	#Labeling the sources in Boolean Mask
+	mask = boolean_mask
+	labels, count = mm.label(mask)
+
+	index = np.arange(count+1)
+	sptr_stack = []
+
+	for i in range(0,img.shape[0]):
+    	channel = img[i,:,:]
+    	src_mean = mm.mean(channel, labels, index)
+    	sptr_stack.append(src_mean)
+    
+	return np.array(sptr_stack)
+
+
+
