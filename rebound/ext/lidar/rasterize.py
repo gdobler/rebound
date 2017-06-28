@@ -4,35 +4,14 @@
 import os
 import sys
 import datetime
+import glob
 import numpy as np
+import pandas as pd
 from utils import get_tile_list
+from raster_stack import get_origin_minmax
 
-def write_header(fname, params):
-    """
-    Write a header for a binary raster file.
+def mn_rasterize():
 
-    Parameters
-    ----------
-    fname : str
-        The filename of the raster (should end in ".bin").
-    params : dict
-        The parameters to write to the header file.
-    """
-
-    # -- open the file and write output time
-    fopen = open(fname.replace(".bin", ".hdr"), "w")
-    fopen.write("{0}\n".format(str(datetime.datetime.now())))
-
-    # -- loop through parameters
-    for k, v in params.items():
-        fopen.write("{0} : {1}\n".format(k, str(v)))
-
-    # -- close the file
-    fopen.close()
-
-    return
-
-if __name__ == "__main__":
     # -- set the minmax 
     mm = [[978979.241501, 194479.07369], [1003555.2415, 220149.07369]]
     
@@ -69,8 +48,40 @@ if __name__ == "__main__":
     rast /= cnts + (cnts == 0)
     
     # -- write to output
-    params = {"nrow" : nrow, "ncol" : ncol, "rmin" : mm[0][1], "rmax" : mm[1][1], 
-              "cmin" : mm[0][0], "cmax" : mm[1][0]}
-    oname  = os.path.join(os.environ["REBOUND_WRITE"], "rasters", "MN_raster.bin")
+    params = {"nrow" : nrow, "ncol" : ncol, "rmin" : mm[0][1], 
+              "rmax" : mm[1][1], "cmin" : mm[0][0], "cmax" : mm[1][0]}
+    oname  = os.path.join(os.environ["REBOUND_WRITE"], "rasters", 
+                          "MN_raster.bin")
     rast.tofile(oname)
     write_header(oname, params)
+
+
+def get_lidar_tiles(location="1MT"):
+    """
+    Determine which LiDAR tiles overlap the region.
+
+    Returns
+    -------
+    coords : dataframe
+        A data frame containing tile coordinates and locations.
+    """
+
+    # -- check the location
+    if location != "1MT":
+        print("ONLY 1 METROTECH BK FACING WRITTEN!!!")
+        return
+
+    # -- read the list of lidar coords
+    cfile  = os.path.join(os.environ["REBOUND_WRITE"], "lidar_tile_info.csv")
+    coords = pd.read_csv(cfile)
+
+    # -- get the list of tile files for BK
+    fpattern = os.path.join(os.environ['REBOUND_DATA'], "data_3d")
+    fpath    = "%s/*/*.TIF" % (fpattern)
+    mm       = get_origin_minmax(sorted(glob.glob(fpath)))
+
+    # -- sub-select tiles in this region
+    ind = (coords.xmin >= mm[0]) & (coords.xmax < mm[2]) & \
+        (coords.ymin >= mm[1]) & (coords.ymax < mm[3])
+
+    return coords[ind]
