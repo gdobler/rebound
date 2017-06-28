@@ -103,10 +103,11 @@ def rasterize_lidar():
     # -- get the range
     nrow = int(round(mm[1][1] - mm[0][1] + 0.5)) + 1
     ncol = int(round(mm[1][0] - mm[0][0] + 0.5)) + 1
+    npix = nrow * ncol
     
     # -- initialize the raster and counts
-    rast = np.zeros((nrow, ncol), dtype=float)
-    cnts = np.zeros((nrow, ncol), dtype=float)
+    rast = np.zeros(npix, dtype=float)
+    cnts = np.zeros(npix, dtype=float)
     
     # -- read the tiles
     for ii, fname in enumerate(flist):
@@ -118,13 +119,14 @@ def rasterize_lidar():
         # -- snap to grid
         rind = (tile[:, 1] - mm[0][1]).round().astype(int)
         cind = (tile[:, 0] - mm[0][0]).round().astype(int)
+        pind = cind + rind * ncol
     
         # -- get the counts in each bin
-        tcnt = np.bincount(cind + rind * ncol)
-    
+        tcnt = np.bincount(pind, minlength=npix)
+
         # -- update the raster
-        rast[rind, cind] += tile[:, 2]
-        cnts[rind, cind] += tcnt[tcnt > 0]
+        rast[pind] += tile[:, 2]
+        cnts[...]  += tcnt
 
         # -- close las file
         las.close()
