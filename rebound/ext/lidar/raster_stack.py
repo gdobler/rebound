@@ -8,7 +8,7 @@ import gdal
 import glob
 import numpy as np
 from gdalconst import *
-from rasterize import write_header
+from utils import write_header
 
 def get_origin_minmax(flist):
     """
