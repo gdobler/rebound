@@ -98,6 +98,10 @@ def colin_inv_rad(params, xim, yim, r):
         floats, or ndarrays
     """
 
+    # -- careful about zeros
+    xim += 1e-3
+    yim += 1e-3
+
     # -- Unwrap params
     kappa, phi, omega, xs, ys, zs, f = params
 
