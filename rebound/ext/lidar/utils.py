@@ -39,3 +39,31 @@ def read_raster(rname):
 
     # -- read in raster and reshape
     return np.fromfile(rname).reshape(nrow, ncol)
+
+
+def write_header(fname, params):
+    """
+    Write a header for a binary raster file.
+
+    Parameters
+    ----------
+    fname : str
+        The filename of the raster (should end in ".bin").
+    params : dict
+        The parameters to write to the header file.
+    """
+
+    # -- open the file and write output time
+    fopen = open(fname.replace(".bin", ".hdr"), "w")
+    fopen.write("{0}\n".format(str(datetime.datetime.now())))
+
+    # -- loop through parameters
+    for k, v in params.items():
+        fopen.write("{0} : {1}\n".format(k, str(v)))
+
+    # -- close the file
+    fopen.close()
+
+    return
+
+
