@@ -78,3 +78,30 @@ def plot_curves(curves_obj, clim=None, oname=None):
         fig.savefig(oname, format='png',clobber=True)
 
     return
+
+def time_series(ts_array, clim=None, oname=None):
+    """
+    Plots on/off transitions of light sources
+    """
+
+    # -- set up the plot
+    fig = plt.figure(figsize=(10, 10))
+
+    # -- show the image
+    # axim.axis("off")
+    # im = axim.imshow(mask,cmap='gist_gray',clim=clim)
+    # fig.set_title('Light Curve Plot')
+
+    # -- show the lightcurve
+    # axlc.set_xlim(0, curves_obj.curves.shape[0])
+    plt.plot(ts_array)
+
+    fig.canvas.draw()
+
+    plt.show()
+
+    # -- write to file if desired
+    if oname is not None:
+        fig.savefig(oname, format='png',clobber=True)
+
+    return
