@@ -95,9 +95,9 @@ def sptr_mean(path, fname, boolean_mask):
 	sptr_stack = []
 
 	for i in range(0,img.shape[0]):
-    	channel = img[i,:,:]
-    	src_mean = mm.mean(channel, labels, index)
-    	sptr_stack.append(src_mean)
+		channel = img[i,:,:]
+		src_mean = mm.mean(channel, labels, index)
+		sptr_stack.append(src_mean)
     
 	return np.array(sptr_stack)
 
