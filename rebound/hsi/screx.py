@@ -31,30 +31,41 @@ def hyper_pixcorr(path, fname, thresh=0.5):
 	the input image
     '''
         
-    # Reading the Raw hyperspectral image
-    cube = utils.read_hyper(path, fname)
+	# Reading the Raw hyperspectral image
+	cube = utils.read_hyper(path, fname)
 
-    # Storing the hyperspectral image as a memmap for future computations
-    img = 1.0 * cube.data
+	# Storing the hyperspectral image as a memmap for future computations
+	img = 1.0 * cube.data
 
-    # Normalizing the Image
-    img -= img.mean(0, keepdims=True)
-    img /= img.std(0, keepdims=True)
+	# Normalizing the Image
+	img -= img.mean(0, keepdims=True)
+	img /= img.std(0, keepdims=True)
 
-    # Computing the correlations between the left-right pixels
-    corr_x = (img[:,:-1,:] * img[:,1:,:]).mean(0)
+	# Computing the correlations between the left-right pixels
+	corr_x = (img[:,:-1,:] * img[:,1:,:]).mean(0)
+	corr_x = corr_x[:,:-1]
 
-    # Computing the correlations between the top-down pixels
-    corr_y = (img[:,:,:-1] * img[:,:,1:]).mean(0)
+	# Computing the correlations between the top-down pixels
+	corr_y = (img[:,:,:-1] * img[:,:,1:]).mean(0)
+	corr_y = corr_y[:-1,:]
 
-    # Creating a Mask for all the pixels/sources with correlation greater than threshold
-    corr_mask_x = corr_x[:,:-1] > thresh
-    corr_mask_y = corr_y[:-1,:] > thresh
+	# Splitting the top-botton part of the image
+	corr_x_top = corr_x[:800,:]
+	corr_x_bot = corr_y[800:1599,:]
 
-    # Merging the correlation masks in left-right and top-down directions
-    final_mask = corr_mask_x | corr_mask_y
+	# Splitting the top-botton part of the image
+	corr_y_top = corr_y[:800,:]
+	corr_y_bot = corr_y[800:1599,:]
 
-    return final_mask
+	# Creating a Mask for all the pixels/sources with correlation greater than threshold
+	corr_mask_x = np.concatenate(((corr_x_top > 0.6),(corr_x_bot > 0.3)),axis=0)
+
+	corr_mask_y = np.concatenate(((corr_y_top > 0.6),(corr_y_bot > 0.3)),axis=0)
+
+	# Merging the correlation masks in left-right and top-down directions
+	final_mask = corr_mask_x | corr_mask_y
+
+	return final_mask
 
 
 
