@@ -5,31 +5,31 @@ import utils
 import scipy.ndimage.measurements as mm
 
 def hyper_pixcorr(path, fname, thresh=0.5):
-    '''
-    hyper_pixcorr takes an input of the hyperspectral image and the threshold
-    correlation values and gives an output boolean array of pixels that are 
-    correlated with their neighbors.
+	'''
+	hyper_pixcorr takes an input of the hyperspectral image and the threshold
+	correlation values and gives an output boolean array of pixels that are 
+	correlated with their neighbors.
     
-    Input Parameters:
-    ------------
+	Input Parameters:
+	------------
 
-        path = str
-           Path to the directory where hyperspectral images are located
+	path = str
+	Path to the directory where hyperspectral images are located
 
-        fname = str
-           File name of raw hyperspectral image
+	fname = str
+	File name of raw hyperspectral image
 
-        thresh = float
-           Threshold correlation value for masking the correlated sources
+	thresh = float
+	Threshold correlation value for masking the correlated sources
 
-    Output:
-    ------------
+	Output:
+	------------
 	final_mask = np.array
-	    Boolean array of pixel locations with correlations along both axes
-
+	Boolean array of pixel locations with correlations along both axes
+	    
 	Note: The dimension of this array is trimmed by 1 row and 1 column than
 	the input image
-    '''
+	'''
         
 	# Reading the Raw hyperspectral image
 	cube = utils.read_hyper(path, fname)
