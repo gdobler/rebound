@@ -4,14 +4,13 @@
 import numpy as np
 import os
 import time
-import pickle
 import matplotlib.pyplot as plt
 from scipy.ndimage.filters import gaussian_filter as gf
 from scipy.ndimage import measurements as mm
 
 def find_night(data_dir,step=100,plot=False):
     '''
-    Extract files and plots avg luminosity. 
+    Extract files and plots avg luminosity. Assumes Brooklyn data.
     Upon click, prints file number (to indicate where to start loading)
     Upon release, prints file number (to indicate where to stop loading)
     Parameters:
@@ -205,7 +204,7 @@ def create_mask(data_dir, step, thresh, bk, file_start, file_stop, gfilter):
     return mask_array, img_cube
 
 
-def light_curve(data_dir, step=5, thresh=.50, bk=True, file_start=100, file_stop=2800, gfilter=None,pickle_it=None):
+def light_curve(data_dir, step=5, thresh=.50, bk=True, file_start=100, file_stop=2800, gfilter=None,output_dir=None):
     '''
     Calls create_mask() and uses output to label pixels to unique light sources.
     Averages the luminosity among pixels of each light source
@@ -238,9 +237,7 @@ def light_curve(data_dir, step=5, thresh=.50, bk=True, file_start=100, file_stop
     
     print "Broadcasting times series array to pixel image coordinates..."
     
-    # broadcast timeseries of light sources into original image array (
-    # NOTE: need to vectorize this
-
+    # broadcast timeseries of light sources into original image array
     ts_cube = np.zeros(img_cube.shape)
     for i in range(0,ts_cube.shape[1]):
         for j in range(0,ts_cube.shape[2]):
@@ -251,30 +248,29 @@ def light_curve(data_dir, step=5, thresh=.50, bk=True, file_start=100, file_stop
     time_output = time.time()
     print "Time to create time series cube: {}".format(time_output - time_ts_cube)
 
-    if pickle_it != None:
+    if output_dir != None:
+        print "Saving files to output..."
+
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
         # cube
-        with open(os.path.join(pickle_it,'img_cube.pickle'),'wb') as handle:
-            pickle.dump(img_cube,handle,protocol=pickle.HIGHEST_PROTOCOL)
+        np.save(os.path.join(output_dir,'_cube.npy'),img_cube)
 
         # mask
-        with open(os.path.join(pickle_it,'mask.pickle'),'wb') as handle:
-            pickle.dump(mask_array,handle,protocol=pickle.HIGHEST_PROTOCOL)
+        np.save(os.path.join(output_dir,'_mask.npy'),mask_array)
 
         # labels
-        with open(os.path.join(pickle_it,'labels.pickle'),'wb') as handle:
-            pickle.dump(labels,handle,protocol=pickle.HIGHEST_PROTOCOL)
+        np.save(os.path.join(output_dir,'_labels.npy'),labels)
 
         # curves
-        with open(os.path.join(pickle_it,'curves.pickle'),'wb') as handle:
-            pickle.dump(ts_array,handle,protocol=pickle.HIGHEST_PROTOCOL)
+        np.save(os.path.join(output_dir,'_lightcurves.npy'),ts_array)
 
         # curves_cube
-        for i in np.arange(0,ts_array.shape[0]-1,10):
-            with open(os.path.join(pickle_it,'curves_cube_{}.pickle'.format(i)),'wb') as handle:
-                pickle.dump(ts_cube[i:i+10,:,:],handle,protocol=pickle.HIGHEST_PROTOCOL)
+        np.save(os.path.join(output_dir,'_lightcurves_cube.npy'),ts_cube)
 
         end = time.time()
-        print "File loaded in output folder"
+        print "Time to save files to output: {}".format(end-time_output)
         print "Total runtime: {}".format(end - start)
 
     else:
