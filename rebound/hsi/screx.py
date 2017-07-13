@@ -106,7 +106,7 @@ def sptr_mean(path, fname, boolean_mask):
 	sptr_stack = []
 
 	for i in range(0,img.shape[0]):
-		channel = img[i,:,:]
+		channel = img[i,:-1,:-1]
 		src_mean = mm.mean(channel, labels, index)
 		sptr_stack.append(src_mean)
     
