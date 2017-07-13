@@ -237,3 +237,42 @@ av    = np.dot(np.linalg.inv(pmTpm), np.dot(pm.T, bv))
 
 dr, dc = av[-2:]
 dtheta = np.arctan2(av[1], av[0]) * 180. / np.pi
+
+
+# -- test this on a source
+rt, ct = 1295, 1817
+
+rrt  = rt - roff_bb
+cct  = ct - coff_bb
+rrt /= factor
+cct /= factor
+
+rt_hsi = rrt*np.cos(dtheta * np.pi / 180.) - \
+    cct*np.sin(dtheta * np.pi / 180.) - dr + roff_hsi
+ct_hsi = rrt*np.sin(dtheta * np.pi / 180.) + \
+    cct*np.cos(dtheta * np.pi / 180.) - dc + coff_hsi
+
+
+# -- convert all bb row and col indices to hsi indices
+nrow = img_bb.shape[0]
+ncol = img_bb.shape[1]
+rind = np.arange(nrow * ncol).reshape(nrow, ncol) // ncol
+cind = np.arange(nrow * ncol).reshape(nrow, ncol) % ncol
+
+rrv  = (rind - roff_bb).astype(float)
+ccv  = (cind - coff_bb).astype(float)
+rrv /= factor
+ccv /= factor
+
+rt_hsi = (rrv*np.cos(dtheta * np.pi / 180.) - 
+          ccv*np.sin(dtheta * np.pi / 180.) - dr + roff_hsi) \
+          .round().astype(int)
+ct_hsi = (rrv*np.sin(dtheta * np.pi / 180.) + 
+          ccv*np.cos(dtheta * np.pi / 180.) - dc + coff_hsi) \
+          .round().astype(int)
+
+rgb = np.zeros(list(img_hs.shape) + [3], dtype=np.uint8)
+
+
+rgb[..., 0] = (2.0*(1.0*img_hs - 150)).clip(0, 200).astype(np.uint8)
+rgb[rt_hsi, ct_hsi, 2] = img_bb[rind, cind]
