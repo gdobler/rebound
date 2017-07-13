@@ -22,13 +22,13 @@ except:
     img_hs = read_hyper(hsname).data[350].copy()
 
 # sources in broadband
-rr_bb = np.array([821.88822972243372, 884.4122688099369, 1212.2626788969724])
-cc_bb = np.array([3313.3156852608604, 3962.6037834772392, 3543.3720854930834])
+rr_bb = np.array([821.88822972243372, 1686.51, 1212.2626788969724])
+cc_bb = np.array([3313.3156852608604, 940.936, 3543.3720854930834])
 
 
 #sources in hyperspectral
-rr_hsi = np.array([852.906, 863.483, 931.829])
-cc_hsi = np.array([2065.47, 2194.84, 2112.66])
+rr_hsi = np.array([852.906, 1036.47, 931.829])
+cc_hsi = np.array([2065.47, 1589.24, 2112.66])
 
 
 #distance between broadband sources 
