@@ -106,8 +106,6 @@ def detect_onoff(lc_file_in, sig_peaks =0.0, multi=False):
                               (lcs_gd[1:-1] < lcs_gd[:-2]) & \
                               ~lcs_gd.mask[1:-1]
     
-    return lcs, lcs_gd, tags_on,tags_off
-
     # -- cross check left/right means for robustness to noise
     print("setting up filters...")
     mean_diff  = ((np.arange(2 * width) >= width) * 2 - 1) / float(width)
@@ -125,15 +123,27 @@ def detect_onoff(lc_file_in, sig_peaks =0.0, multi=False):
     # -- identify all potentially robust transitions and prune list
     #    NB: careful about handling partial initial days.
     print("pruning ons and offs for statistical significance...")
-    pad       = np.zeros((dind_lo[0], lcs.shape[1]), dtype=bool)
     good_arr  = lcs_md > sig_xcheck * lcs_std
-    good_ons  = np.vstack([pad] + tags_on) & good_arr
-    good_offs = np.vstack([pad] + tags_off) & good_arr
+    if multi:
+        pad       = np.zeros((dind_lo[0], lcs.shape[1]), dtype=bool)
+        good_ons  = np.vstack([pad] + tags_on) & good_arr
+        good_offs = np.vstack([pad] + tags_off) & good_arr
+    else:
+        pad       = np.zeros((lcs.shape), dtype=bool)
+        good_ons  = (pad + tags_on) & good_arr
+        good_offs = (pad + tags_off) & good_arr
     
     # -- split nights
-    ons  = [good_ons[i:j] for i, j in zip(dind_lo, dind_hi)]
-    offs = [good_offs[i:j] for i, j in zip(dind_lo, dind_hi)]
-    lcsn = [lcs[i:j] for i, j in zip(dind_lo, dind_hi)]
+    if multi:
+        ons  = [good_ons[i:j] for i, j in zip(dind_lo, dind_hi)]
+        offs = [good_offs[i:j] for i, j in zip(dind_lo, dind_hi)]
+        lcsn = [lcs[i:j] for i, j in zip(dind_lo, dind_hi)]
+
+    else:
+        ons = lcs * good_ons
+        offs = lcs * good_offs
+
+    return lcs, lcs_gd, ons, offs
     
     # -- write on/offs to file
     print("writing ons/offs to files...")
