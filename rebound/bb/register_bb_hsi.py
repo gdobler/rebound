@@ -22,13 +22,13 @@ except:
     img_hs = read_hyper(hsname).data[350].copy()
 
 # sources in broadband
-rr_bb = np.array([821.88822972243372, 1686.51, 1212.2626788969724])
-cc_bb = np.array([3313.3156852608604, 940.936, 3543.3720854930834])
+rr_bb = np.array([821.88822972243372, 1200.35, 1686.51, 1212.2626788969724])
+cc_bb = np.array([3313.3156852608604, 541.344, 940.936, 3543.3720854930834])
 
 
 #sources in hyperspectral
-rr_hsi = np.array([852.906, 1036.47, 931.829])
-cc_hsi = np.array([2065.47, 1589.24, 2112.66])
+rr_hsi = np.array([852.906, 939.741, 1036.47, 931.829])
+cc_hsi = np.array([2065.47, 1508.36, 1589.24, 2112.66])
 
 
 #distance between broadband sources 
@@ -52,7 +52,8 @@ print (hsi1, hsi2, hsi3)
 
 
 # -- get mean ratio of distances
-factor = (bb1/hsi1 + bb2/hsi2 + bb3/hsi3) / 3
+factor = dist_bb/dist_hsi
+factor = factor[0,1]
 
 
 # -- get average intensity of pixels across rgb channels
@@ -125,49 +126,61 @@ def find_quads(dist, rr_cat, cc_cat):
     dcat0 = np.sqrt(((rr_cat[0] - rr_cat)**2 + (cc_cat[0] - cc_cat)**2))
     dcat1 = np.sqrt(((rr_cat[1] - rr_cat)**2 + (cc_cat[1] - cc_cat)**2))
     dcat2 = np.sqrt(((rr_cat[2] - rr_cat)**2 + (cc_cat[2] - cc_cat)**2))
+    dcat3 = np.sqrt(((rr_cat[3] - rr_cat)**2 + (cc_cat[3] - cc_cat)**2))
     
     p0ind = find(dist, dcat0)
     p1ind = find(dist, dcat1)
     p2ind = find(dist, dcat2)
+    p3ind = find(dist, dcat3)
     
-    return p0ind, p1ind, p2ind
-
+    return p0ind, p1ind, p2ind, p3ind
+    
 
 # -- get potential source indices
-p0ind, p1ind, p2ind = find_quads(dist, rr_hsi, cc_hsi)
+p0ind, p1ind, p2ind, p3ind = find_quads(dist, rr_hsi, cc_hsi)
 
 
 # -- compare multiple distances
 dcat0 = np.sqrt(((rr_hsi[0] - rr_hsi)**2 + (cc_hsi[0] - cc_hsi)**2))
 dcat1 = np.sqrt(((rr_hsi[1] - rr_hsi)**2 + (cc_hsi[1] - cc_hsi)**2))
 dcat2 = np.sqrt(((rr_hsi[2] - rr_hsi)**2 + (cc_hsi[2] - cc_hsi)**2))
+dcat3 = np.sqrt(((rr_hsi[3] - rr_hsi)**2 + (cc_hsi[3] - cc_hsi)**2))
+
 good01 = []
 for ii in p0ind:
     for jj in p1ind:
-        if np.abs(dist[ii, jj] - dcat0[1]) < 10:
+        if np.abs(dist[ii,jj] - dcat0[1]) < 10:
             good01.append([ii, jj])
 good012 = []
-for ii, jj in good01:
+for ii,jj in good01:
     for kk in p2ind:
         flag02 = np.abs(dist[ii, kk] - dcat0[2]) < 10
         flag12 = np.abs(dist[jj, kk] - dcat1[2]) < 10
         if flag02 and flag12:
             good012.append([ii, jj, kk])
+good0123 = []
+for ii,jj,kk in good012:
+    for mm in p3ind:
+        flag03 = np.abs(dist[ii, mm] - dcat0[3]) < 10
+        flag13 = np.abs(dist[jj, mm] - dcat1[3]) < 10
+        flag23 = np.abs(dist[kk, mm] - dcat2[3]) < 10
+        if flag03 and flag13 and flag23:
+            good0123.append([ii, jj, kk, mm])
 
 
 # -- set paired down indices
-p0s, p1s, p2s = np.array(good012).T
+p0s, p1s, p2s, p3s = np.array(good012).T
 
 
 # -- find the delta angles of the first 2 pairs
-theta01 = np.arccos((rr1[p0s] - rr1[p1s]) / (dist[p0s, p1s] * factor))
-theta02 = np.arccos((rr1[p0s] - rr1[p2s]) / (dist[p0s, p2s] * factor))
+theta01 = np.arccos((rr1[p0s] - rr1[p1s]) / dist[p0s, p1s] * factor)
+theta02 = np.arccos((rr1[p0s] - rr1[p2s]) / dist[p0s, p2s] * factor)
 dtheta  = (theta01 - theta02) * 180. / np.pi
 
 
 # -- get hsi distance matrix
 dcatm = np.sqrt((rr_hsi[:, np.newaxis] - rr_hsi)**2 + 
-                (cc_hsi[:, np.newaxis] - cc_hsi)**2)
+                (cc_hsi[:,np.newaxis] - cc_hsi)**2)
 
 
 # -- find the delta angle of thr first 2 sources of catalog
@@ -177,7 +190,7 @@ dtheta_cat  = (theta01_cat - theta02_cat) * 180. / np.pi
 
 
 # -- compare the difference in angles
-guess = np.array(good012[np.abs(dtheta - dtheta_cat).argmin()])
+guess = np.array(good0123[np.abs(dtheta - dtheta_cat).argmin()])
 
 
 
@@ -198,7 +211,7 @@ guess = np.array(good012[np.abs(dtheta - dtheta_cat).argmin()])
 # ccc1 -= coff_bb
 
 
-rrr0, ccc0 = rr_hsi[np.array([0, 1, 2])], cc_hsi[np.array([0, 1, 2])]
+rrr0, ccc0 = rr_hsi[np.array([0, 1, 2, 3])], cc_hsi[np.array([0, 1, 2, 3])]
 rrr1, ccc1 = rr1[guess], cc1[guess]
 
 roff_hsi = img_hs.shape[0] / 2
