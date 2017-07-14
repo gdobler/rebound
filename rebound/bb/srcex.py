@@ -6,7 +6,6 @@ import os
 import time
 import matplotlib.pyplot as plt
 from scipy.ndimage.filters import gaussian_filter as gf
-from scipy.ndimage import measurements as mm
 
 # -- global variables
 DATA_FILEPATH = os.path.join(os.environ['REBOUND_DATA'],'bb','2017') # locatinon of BK bband images
