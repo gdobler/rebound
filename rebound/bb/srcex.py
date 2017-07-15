@@ -154,16 +154,18 @@ def create_mask(nights, directory=DATA_FILEPATH, output=None, sh=IMG_SHAPE, step
     for night in nights:
         
         # initialize night cube
-        imgs = np.empty((lnight,sh[0],sh[1]))
+        imgs = np.empty((lnight,sh[0],sh[1]),dtype=np.float32)
 
         data_dir = os.path.join(directory,night[0],night[1])
 
         # load raw files
         print('Loading images for {}...'.format(night))
 
+        nidx = 0
         for i in sorted(os.listdir(data_dir))[file_start:file_stop:step]:
-            imgs = (np.fromfile(os.path.join(
-                    data_dir, i), dtype=np.uint8).reshape(sh[0], sh[1]))*1.0
+            imgs[nidx,:,:] = (np.fromfile(os.path.join(
+                    data_dir, i), dtype=np.uint8).reshape(sh[0], sh[1])).astype(np.float32)
+            nidx += 1
 
         # standardize
         print('Standardizing for {}...'.format(night))
