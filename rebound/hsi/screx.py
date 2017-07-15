@@ -109,7 +109,7 @@ def sptr_mean(path, fname, boolean_mask):
 		channel = img[i,:-1,:-1]
 		src_mean = mm.mean(channel, labels, index)
 		sptr_stack.append(src_mean)   #redund
-		sptr_stack = np.array(sptr_stack)    #redund	
+		#sptr_stack = np.array(sptr_stack)    #redund	
 		sources = np.array([sptr_stack[:,i] for i in range(count)])   #redund
     
 	return sources
