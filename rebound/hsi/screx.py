@@ -4,7 +4,7 @@ import os
 import utils
 import scipy.ndimage.measurements as mm
 
-def hyper_pixcorr(path, fname, thresh=0.5):
+def hyper_pixcorr(path, fname, thresh=0.3):
 	'''
 	hyper_pixcorr takes an input of the hyperspectral image and the threshold
 	correlation values and gives an output boolean array of pixels that are 
@@ -58,9 +58,9 @@ def hyper_pixcorr(path, fname, thresh=0.5):
 	corr_y_bot = corr_y[800:1599,:]
 
 	# Creating a Mask for all the pixels/sources with correlation greater than threshold
-	corr_mask_x = np.concatenate(((corr_x_top > 0.6),(corr_x_bot > 0.3)),axis=0)
+	corr_mask_x = np.concatenate(((corr_x_top > 0.6),(corr_x_bot > thresh)),axis=0)
 
-	corr_mask_y = np.concatenate(((corr_y_top > 0.6),(corr_y_bot > 0.3)),axis=0)
+	corr_mask_y = np.concatenate(((corr_y_top > 0.6),(corr_y_bot > thresh)),axis=0)
 
 	# Merging the correlation masks in left-right and top-down directions
 	final_mask = corr_mask_x | corr_mask_y
