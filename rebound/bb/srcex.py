@@ -143,7 +143,7 @@ def create_mask(nights, directory=DATA_FILEPATH, output=None, sh=IMG_SHAPE, step
 
     # - utils
     if multi:
-        lnight = 300
+        lnight = 250
     else:
         lnight = len(np.arange(file_start,file_stop,step))
     nnights = len(nights)
