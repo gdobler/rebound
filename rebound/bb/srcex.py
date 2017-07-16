@@ -4,6 +4,7 @@
 import numpy as np
 import os
 import time
+import random
 import matplotlib.pyplot as plt
 from scipy.ndimage.filters import gaussian_filter as gf
 from scipy.ndimage import measurements as mm
@@ -96,7 +97,7 @@ def truncate_daylight(data_dir, daylight_step, plot):
 
         return
 
-def create_mask(nights, directory=DATA_FILEPATH, output=None, sh=IMG_SHAPE, step=5, file_start=100,file_stop=2700, thresh=0.5, gfilter=None):
+def create_mask(nights, directory=DATA_FILEPATH, output=None, sh=IMG_SHAPE, step=5, multi=False, file_start=100,file_stop=2700, thresh=0.5, gfilter=None):
     '''
     Converts a series of raw images into a 2-D boolean mask array
     that indicates pixels that are highly correlated based on 
@@ -141,12 +142,15 @@ def create_mask(nights, directory=DATA_FILEPATH, output=None, sh=IMG_SHAPE, step
     start_mask = time.time()
 
     # - utils
-    lnight = len(np.arange(file_start,file_stop,step))
+    if multi:
+        lnight = 300
+    else:
+        lnight = len(np.arange(file_start,file_stop,step))
     nnights = len(nights)
 
     # initialize image time-series datacube, 
     # with known dims if using default file_start/file_stop (i.e. night only index)
-    img_cube = np.empty((nnights*lnight,sh[0],sh[1]))
+    img_cube = np.empty((nnights*lnight,sh[0],sh[1]),dtype=np.float32)
     idx = 0
 
 
@@ -162,6 +166,11 @@ def create_mask(nights, directory=DATA_FILEPATH, output=None, sh=IMG_SHAPE, step
         print('Loading images for {}...'.format(night))
 
         nidx = 0
+
+        if multi:
+            file_start = random.randint(file_start,file_stop-lnight)
+            file_stop = file_start+lnight
+
         for i in sorted(os.listdir(data_dir))[file_start:file_stop:step]:
             imgs[nidx,:,:] = (np.fromfile(os.path.join(
                     data_dir, i), dtype=np.uint8).reshape(sh[0], sh[1])).astype(np.float32)
