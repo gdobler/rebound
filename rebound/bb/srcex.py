@@ -6,6 +6,8 @@ import os
 import time
 import matplotlib.pyplot as plt
 from scipy.ndimage.filters import gaussian_filter as gf
+from scipy.ndimage import measurements as mm
+
 
 # -- global variables
 DATA_FILEPATH = os.path.join(os.environ['REBOUND_DATA'],'bb','2017') # locatinon of BK bband images
@@ -118,8 +120,7 @@ def create_mask(nights, directory=DATA_FILEPATH, output=None, sh=IMG_SHAPE, step
         threshold correlation coefficient value, below which all pixels are masked
 
     file_start = int (default 100)
-        index of files in source directory to start loading at 
-        (remember only the half files are .raw and half .jpg-->ignored)
+        index of files in source directory to start loading 
 
     file_stop = int (default 2700)
         index of files in source directory to stop loading
@@ -130,44 +131,50 @@ def create_mask(nights, directory=DATA_FILEPATH, output=None, sh=IMG_SHAPE, step
 
     Returns:
     ________
-    2-d numpy array
+    mask = 2-d numpy array
         boolean array that expresses true for coordinates of pixels that are correlated
         with neighbors.
+
+    labels = 2-d numpy array
+        labels of pixels grouped in unique light sources as positioned (row,col) in original image
     '''
     start_mask = time.time()
 
+    # - utils
+    lnight = len(np.arange(file_start,file_stop,step))
+    nnights = len(nights)
+
+    # initialize image time-series datacube, 
+    # with known dims if using default file_start/file_stop (i.e. night only index)
+    img_cube = np.empty((nnights*lnight,sh[0],sh[1]))
+    idx = 0
+
+
     # -- load files for each select night and standardize
-
-    all_nights = []
-
     for night in nights:
         
-        img_list = []
+        # initialize night cube
+        imgs = np.empty((lnight,sh[0],sh[1]),dtype=np.float32)
 
         data_dir = os.path.join(directory,night[0],night[1])
-
-        if file_start is None:
-            # find index of daylight images
-            print('Daylight slice for {}...'.format(night))
-            file_start,file_stop = truncate_daylight(data_dir,daylight_step=100,plot=False)
 
         # load raw files
         print('Loading images for {}...'.format(night))
 
+        nidx = 0
         for i in sorted(os.listdir(data_dir))[file_start:file_stop:step]:
-            img_list.append(np.fromfile(os.path.join(
-                    data_dir, i), dtype=np.uint8).reshape(sh[0], sh[1]))
+            imgs[nidx,:,:] = (np.fromfile(os.path.join(
+                    data_dir, i), dtype=np.uint8).reshape(sh[0], sh[1])).astype(np.float32)
+            nidx += 1
 
         # standardize
-        print('Stacking and standardizing for {}...'.format(night))
-
-        imgs = np.array(img_list,dtype=np.float32)
+        print('Standardizing for {}...'.format(night))
 
         # run Gaussian filter (options)
         if gfilter is not None:
             print "Running Gaussian filter..."
             imgs_sm = gf(imgs, (gfilter, 0, 0))
-            imgs = imgs - imgs_sm
+            imgs -= imgs_sm
 
         # subtract mean along nimg axis
         imgs -= imgs.mean(axis=0, keepdims=True)
@@ -178,12 +185,12 @@ def create_mask(nights, directory=DATA_FILEPATH, output=None, sh=IMG_SHAPE, step
         # this will create nan values for zero division (pixels with
         # unchanging luminosity i.e. 0 st. dev)
         # boolean mask and set nan values to 0 for further operations
-        img_idx = np.isnan(imgs)
-        imgs[img_idx] = 0
+        # img_idx = np.isnan(imgs)
+        imgs[np.isnan(imgs)] = 0
 
-        all_nights.append(imgs)
+        img_cube[idx:idx+imgs.shape[0],:,:] = imgs
 
-    all_imgs = np.concatenate(all_nights)
+        idx += imgs.shape[0]
 
     time_loaded = time.time()
     print('Time to load and standardize: {}'.format(time_loaded-start_mask))
@@ -191,8 +198,8 @@ def create_mask(nights, directory=DATA_FILEPATH, output=None, sh=IMG_SHAPE, step
     print("Calculating correlation coefficients...")
 
     # matrix mult to get horizontal and vertical correlation
-    corr_r = (all_imgs[:, :-1, :] * all_imgs[:, 1:, :]).mean(0)
-    corr_c = (all_imgs[:, :, :-1] * all_imgs[:, :, 1:]).mean(0)
+    corr_r = (img_cube[:, :-1, :] * img_cube[:, 1:, :]).mean(0)
+    corr_c = (img_cube[:, :, :-1] * img_cube[:, :, 1:]).mean(0)
 
     # Creating a mask for all the pixels/sources with correlation greater than
     # threshold
@@ -213,18 +220,24 @@ def create_mask(nights, directory=DATA_FILEPATH, output=None, sh=IMG_SHAPE, step
     # Merging the correlation masks in left-right and top-down directions
     mask_array = corr_mask_r | corr_mask_c
 
+
+    # Create array of labeled light sources
+    labels, num_features = mm.label(mask_array.astype(bool))
+
     stop_mask = time.time()
     print "Time to create final image mask: {}".format(stop_mask-time_loaded)
-    print "Total create mask runtime: {}".format(stop_mask-start_mask)
-
+    
     if output != None:
-        print "Saving files to output..."
+        print "Writing files to output..."
 
         if not os.path.exists(output):
             os.makedirs(output)
 
-        # save mask
+        # write mask
         np.save(os.path.join(output,'mask.npy'),mask_array)
+
+        # write labels
+        np.save(os.path.join(output,'labels.npy'),labels)
 
         end = time.time()
         print "Total runtime: {}".format(end - start_mask)
@@ -233,13 +246,12 @@ def create_mask(nights, directory=DATA_FILEPATH, output=None, sh=IMG_SHAPE, step
         class output():
 
             def __init__(self):
-                self.cube = all_imgs
+                self.cube = img_cube
                 self.mask = mask_array
 
         end = time.time()
         print "Total runtime: {}".format(end - start_mask)
         return output()
-
 
 
 
