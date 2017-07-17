@@ -3,6 +3,7 @@
 
 import os
 import datetime
+import pyproj
 import numpy as np
 
 def get_tile_list():
@@ -68,3 +69,13 @@ def write_header(fname, params):
     return
 
 
+def latlon_to_ny(lat, lon):
+        proj   = pyproj.Proj(init="epsg:2263", preserve_units=True)
+        result = proj(lon, lat)
+        return result
+
+
+def ny_to_latlon(ny_lat, ny_lon):
+        proj   = pyproj.Proj(init="epsg:2263", preserve_units=True)
+        result = proj(ny_lat, ny_lon, inverse=True)
+        return result[1], result[0]
