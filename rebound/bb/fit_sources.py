@@ -13,12 +13,15 @@ import scipy.ndimage.measurements as spm
 droot  = os.environ["REBOUND_DATA"]
 bbname = os.path.join(droot, "bb", "2017", "07", "06", "stack_bb_0037777.raw")
 hsname = os.path.join(droot, "slow_hsi_scans", "night_052617_00007.raw")
+bb_mask = os.path.join(droot, "masks", "bb_mask2.npy")
+bb_labels = os.path.join(droot, "masks", "bb_labels2.npy")
 try:
     img_hs
 except:
     img_bb = read_raw(bbname)
     img_hs = read_hyper(hsname).data[350].copy()
-
+    bb_mask = np.load(bb_mask)
+    bb_labels = np.load(bb_labels)
 
 # -- read sources
 sname = os.path.join(os.environ["REBOUND_WRITE"], "sources.csv")
@@ -143,3 +146,15 @@ cv_hsi = (rrv * np.sin(-dtheta * np.pi / 180.) +
 print("HSI_r in  = {0}\nHSI_r out = {1}".format(srcs.hs_r.values, rv_hsi))
 print("")
 print("HSI_c in  = {0}\nHSI_c out = {1}".format(srcs.hs_c.values, cv_hsi))
+
+
+#getting the HSI mask
+hsi_mask = np.zeros(list(img_hs.shape) + [3], dtype=np.uint8)
+hsi_mask[..., 0] = (15.0*(1.0*img_hs - 150)).clip(0, 200).astype(np.uint8)
+hsi_mask[rt_hsi, ct_hsi, 2] = (10.*bb_labels[rind, cind]).clip(0, 255).astype(np.uint8)
+
+fig, ax = plt.subplots(figsize=(xs, ys))
+fig.subplots_adjust(0, 0, 1, 1)
+ax.axis("off")
+im = ax.imshow(hsi_mask)
+fig.canvas.draw()
