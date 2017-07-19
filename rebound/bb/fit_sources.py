@@ -148,13 +148,22 @@ print("")
 print("HSI_c in  = {0}\nHSI_c out = {1}".format(srcs.hs_c.values, cv_hsi))
 
 
-#getting the HSI mask
-hsi_mask = np.zeros(list(img_hs.shape) + [3], dtype=np.uint8)
-hsi_mask[..., 0] = (15.0*(1.0*img_hs - 150)).clip(0, 200).astype(np.uint8)
-hsi_mask[rt_hsi, ct_hsi, 2] = (10.*bb_labels[rind, cind]).clip(0, 255).astype(np.uint8)
+# -- getting the HSI mask
+# -- getting the size of sources
+lsz = spm.sum(bb_mask, bb_labels, range(1, bb_labels.max()+1)) 
+
+for ii in range(lsz.size):
+    if lsz[ii] < 20:
+        bb_labels[bb_labels == ii + 1] = 0
+
+hsi_mask = np.zeros(list(img_hs.shape), dtype=int)
+hsi_mask[rt_hsi, ct_hsi] = bb_labels[rind, cind]
 
 fig, ax = plt.subplots(figsize=(xs, ys))
 fig.subplots_adjust(0, 0, 1, 1)
 ax.axis("off")
 im = ax.imshow(hsi_mask)
 fig.canvas.draw()
+
+print len(np.unique(hsi_mask))
+print len(np.unique(bb_labels))
