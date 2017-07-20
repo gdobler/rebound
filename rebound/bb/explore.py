@@ -4,6 +4,7 @@
 import os
 import time
 import numpy as np
+import plotting
 import matplotlib.pyplot as plt
 
 # global variables
@@ -11,6 +12,7 @@ import matplotlib.pyplot as plt
 CURVES_PATH = os.path.join(os.environ['REBOUND_WRITE'], 'lightcurves') # location of lightcurves
 EDGE_PATH = os.path.join(os.environ['REBOUND_WRITE'], 'on_off') # location of lightcurves
 IMG_SHAPE = (3072, 4096)  # dimensions of BK raw images
+LABELED_MASK = np.load(os.path.join(os.environ['REBOUND_WRITE'], 'final','labels.npy'))
 
 def load_lc():
 	all_curves = []
@@ -44,3 +46,7 @@ def load_onoff():
 	off_arr = np.concatenate(all_offs, axis = 0)
 
 	return on_arr, off_arr
+
+def plot():
+
+	plotting.quick_source_info(LABELED_MASK, clim=None, oname=None)
