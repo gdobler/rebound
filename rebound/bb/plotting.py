@@ -33,43 +33,41 @@ def plot_image(img, clim=None, oname=None):
 
     return
 
-def plot_curves(curves_obj, clim=None, oname=None):
+def quick_source_info(labeled_mask, clim=None, oname=None):
     """
-    Plot light curves
+    Plots a mask and upon mouse hover, sets plot title to: 
+        pixel row,col; 
+        light source label;
+        light source size.
     """
 
-    def update_ts(event):
-        if event.inaxes == axim:
+    # utils
+    unique, size = np.unique(labeled_mask, return_counts=True)
+
+    def print_label(event):
+        if event.inaxes == ax:
             rind = int(event.ydata)
             cind = int(event.xdata)
 
-            tspec = curves_obj.curves[:, rind, cind]
-            linsp.set_data(np.asarray(np.arange(curves_obj.curves.shape[0])),curves_obj.curves[:, rind, cind])
-            axlc.set_ylim(tspec.min(), tspec.max() * 1.1)
-            axlc.set_title("({0},{1})".format(rind, cind))
+            ax.set_title("Pixel: ({},{}) | Light Source #: {} | Source Pixel Size: {}".format(
+                rind, cind,labeled_mask[rind,cind],size[labeled_mask[rind,cind]]))
 
             fig.canvas.draw()
 
     # -- plot mask
-    mask = np.zeros(curves_obj.mask.shape,dtype=np.uint8)
-    mask[curves_obj.mask] = 255
-
+    mask = np.zeros(labeled_mask.shape,dtype=bool)
+    idx = labeled_mask > 0
+    mask[idx] = 255
 
     # -- set up the plot
-    fig, ax = plt.subplots(2, 1, figsize=(10, 10))
-    axlc, axim = ax
+    fig, ax= plt.subplots(1, 1, figsize=(15, 15))
 
     # -- show the image
-    axim.axis("off")
-    im = axim.imshow(mask,cmap='gist_gray',clim=clim)
-    axim.set_title('Mask Image')
-
-    # -- show the lightcurve
-    axlc.set_xlim(0, curves_obj.curves.shape[0])
-    linsp, = axlc.plot(np.asarray(np.arange(curves_obj.curves.shape[0])),curves_obj.curves[:, 0, 0])
+    ax.axis("off")
+    im = ax.imshow(mask,interpolation='nearest', cmap='gist_gray',clim=clim)
 
     fig.canvas.draw()
-    fig.canvas.mpl_connect("motion_notify_event", update_ts)
+    fig.canvas.mpl_connect('motion_notify_event', print_label)
 
     plt.show()
 
