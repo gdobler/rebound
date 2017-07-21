@@ -103,3 +103,6 @@ def time_series(ts_array, clim=None, oname=None):
         fig.savefig(oname, format='png',clobber=True)
 
     return
+
+def bar_graph(data,interval):
+    plt.bar()
