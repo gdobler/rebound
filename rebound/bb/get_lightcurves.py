@@ -11,7 +11,7 @@ from scipy.ndimage import measurements as mm
 
 
 # global variables
-# locatinon of BK bband images
+# location of BK bband images
 DATA_FILEPATH = os.path.join(os.environ['REBOUND_DATA'], 'bb', '2017')
 IMG_SHAPE = (3072, 4096)  # dimensions of BK raw images
 MASK = np.load(os.path.join(os.environ['REBOUND_WRITE'], 'final', 'mask.npy'))
@@ -96,7 +96,7 @@ def get_curves(month, night, output_dir, file_start=100, file_stop=2700, step=6,
         class output():
 
             def __init__(self):
-                self.cube = img_cube
+                # self.cube = img_cube
                 self.unique = unique
                 self.size = size
                 self.curves = ts_array
@@ -122,7 +122,8 @@ def multi_nights(output_dir, step=1, all_nights=False, nights=None):
             nights = [('06', '25'), ('06', '26'), ('06', '27'), ('06', '28'), 
             ('06', '29'), ('06', '30'), ('07', '01'), ('07', '02'), ('07', '03'), 
             ('07', '04'), ('07', '05'), ('07', '06'), ('07', '07'), ('07', '08'), 
-            ('07', '09'), ('07', '10'), ('07', '11'), ('07', '12'), ('07', '13'), ('07', '14')]
+            ('07', '09'), ('07', '10'), ('07', '11'), ('07', '12'), ('07', '13'), ('07', '14'),
+            ('07','15'),('07','16')]
 
         for n in nights:
             get_curves(month=n[0], night=n[1],
