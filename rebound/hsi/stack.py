@@ -5,7 +5,24 @@ import os
 import glob
 import utils
 
-def stack_hsi(dpath):
+def stack_meanspectra(dpath):
+    '''
+    stack_meanspectra takes an input of the hyperspectral image directory path and
+    stacks all the hyperspectral scans with in the directory and gives an output 
+    data cube which contains the mean spectrum of all scans
+
+    Input Parameters:
+    ------------
+    dpath = str
+        Path to the directory where hyperspectral images are located
+
+    Output:
+    ------------
+    stack_mean = np.memmap
+        Mean Spectrum of all scans
+    
+    '''
+
     # -- get the file list
     #dpath = os.path.join(os.environ["REBOUND_DATA"], "slow_hsi_scans")
     flist = sorted(glob.glob(os.path.join(dpath, "*.raw")))
