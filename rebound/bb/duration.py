@@ -9,7 +9,8 @@ import numpy as np
 
 def calc_dur():
     """
-    Takes as inputs, the on and off boolean cubes already created as outputs of detect_onoff.py.
+    Takes as inputs, the on and off boolean cubes already created as outputs of detect_onoff.py
+    Their shape: (num nights x num timesteps x num sources)
     Returns a 2-d array of duration for light curves (each source for each night),
     shape (num nights x num sources)
     """
