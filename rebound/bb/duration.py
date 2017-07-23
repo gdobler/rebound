@@ -6,24 +6,16 @@ import time
 import utils2
 import numpy as np
 
-# global variables
-# location of BK bband images
-EDGES = os.path.join(os.environ['REBOUND_WRITE'], 'final_onoff') # location of lightcurves
 
-# load on / off transitions
-def load_edge():
-    '''
-    Loads ons and offs as datacubes, shape: num nights x num timesteps x num sources.
-    '''
-    return utils2.load_onoff(clip=True)
-
-
-def calc_dur(ons, offs):
+def calc_dur():
     """
-    Takes as inputs, the on and off boolean cubes as output by load_edge.
+    Takes as inputs, the on and off boolean cubes already created as outputs of detect_onoff.py.
     Returns a 2-d array of duration for light curves (each source for each night),
     shape (num nights x num sources)
     """
+
+    ons, offs = utils2.load_onoff(clip=True)
+
     ons *= 1.0
     offs *= -1.0
 
