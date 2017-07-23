@@ -58,7 +58,7 @@ def get_ldr_fid(image):
 def center_img_fid(dims, img_fid):
 
 	'''Center fiducial points using image dimensions'''
-	center_fid = np.zeros([img_fid[0], img_fid[1]]) 	
+	center_fid = np.zeros((np.shape(img_fid)[0], np.shape(img_fid)[1])) 	
 	
 	for i in range(np.shape(img_fid)[0]):
 		center_fid[i, 0] = img_fid[i, 0] - (dims[0] / 2)
