@@ -17,7 +17,7 @@ def load_edge():
 
 # create binary
 
-def merge(ons, offs):
+def calc_dur(ons, offs):
     ons *= 1.0
     offs *= -1.0
 
@@ -28,22 +28,31 @@ def merge(ons, offs):
     NIGHT = 0
     SOURCE = 725
 
-    temp = master[NIGHT,:,:]
+    master = master[NIGHT,:,:]
 
     # calculate duration
-    dur = 0
-    last_idx = 0
-    last_on = False
+    dur = np.zeros((master.shape[-1]))
+    last_idx = np.zeros((master.shape[-1]))
+    last_on = np.zeros((master.shape[-1]),dtype=bool)
 
-    for i in range(temp.shape[0]):
-        if temp[i] == 1:
-            if not last_on:
-                last_on = True
-                last_idx = i
+    for i in range(master.shape[0]):
 
-        elif  temp[i] == -1:
-            dur += (i - last_idx)
-            on = False
-            last_idx = i
+        # if on
+        on_msk = (master[i,:] == 1) & (~last_on)
+        try:
+            last_idx[on_msk] = i
+            last_on[on_msk] = True
+        except ValueError:
+            pass
+
+        # if off
+        off_msk = master[i,:] == -1
+        try:
+            dur[off_msk] += (i - last_idx[off_msk])
+            last_on[off_msk] = False
+            last_idx[off_msk] = i
+        except ValueError:
+            pass
+
 
     return dur
