@@ -12,12 +12,18 @@ EDGES = os.path.join(os.environ['REBOUND_WRITE'], 'final_onoff') # location of l
 
 # load on / off transitions
 def load_edge():
+    '''
+    Loads ons and offs as datacubes, shape: num nights x num timesteps x num sources.
+    '''
     return utils2.load_onoff(clip=True)
 
 
-# create binary
-
 def calc_dur(ons, offs):
+    """
+    Takes as inputs, the on and off boolean cubes as output by load_edge.
+    Returns a 2-d array of duration for light curves (each source for each night),
+    shape (num nights x num sources)
+    """
     ons *= 1.0
     offs *= -1.0
 
