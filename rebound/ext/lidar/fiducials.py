@@ -50,10 +50,15 @@ def get_ldr_fid(image):
       				    [9.87855866e+05, 1.89793684e+05, 3.98000000e+01],
       				    [9.87694656e+05, 1.90460144e+05, 7.92000000e+01]])
 
+	else:
+		print "Not a valid image"
+		return
+
+	return ldr_fid
 def center_img_fid(dims, img_fid):
 
 	'''Center fiducial points using image dimensions'''
-	center_fid = np.zeros([[img_fid[0], img_fid[1]]) 	
+	center_fid = np.zeros([img_fid[0], img_fid[1]]) 	
 	
 	for i in range(np.shape(img_fid)[0]):
 		center_fid[i, 0] = img_fid[i, 0] - (dims[0] / 2)
