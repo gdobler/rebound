@@ -29,13 +29,6 @@ def calc_dur(ons, offs):
 
     master = ons + offs
 
-    # ---- temporary pick a night and source
-
-    NIGHT = 0
-    SOURCE = 725
-
-    # master = master[NIGHT,:,:]
-
     # calculate duration
     dur = np.zeros((master.shape[0],master.shape[-1]))
     last_idx = np.zeros((master.shape[0],master.shape[-1]))
