@@ -106,3 +106,51 @@ def time_series(ts_array, clim=None, oname=None):
 
 def bar_graph(data,interval):
     plt.bar()
+
+
+def compare_curves(curves, ons, offs, night1, night2, off=True):
+
+    # utils
+    first_night = np.datetime64('2017-06-25')
+    if off: 
+        tag = -1
+        tag_title = "Off"
+    else:
+        tag = 1
+        tag_title = "On"
+
+    # load on and off tags
+    ons *= 1.0
+    offs *= -1.0
+    master = ons + offs
+
+    def tags(night,sort_on):
+        i,j = np.where(master[sort_on,:,:]==tag)
+        _, idx = np.unique(j, return_index=True)
+        
+        data = curves[night]*1.0 / np.amax(curves[night],axis=0)
+    
+        return data[:,j[np.sort(idx)][::-1]].T
+
+    # -- set up the plot
+    fig, ax= plt.subplots(3, 1, figsize=(15, 20))
+    ax1, ax2, ax3 = ax
+
+    ax1.set_title("{} tags for {}".format(tag_title, first_night+night1))
+    ax1.imshow(tags(night1,night1),cmap='gray');
+
+    ax2.set_title("{} tags for {}, sorted on {}".format(tag_title, first_night+night2, first_night+night2))
+    ax2.imshow(tags(night2, night2),cmap='gray');
+
+    ax3.set_title("{} tags for {}, sorted on {}".format(tag_title, first_night+night2, first_night+night1))
+    ax3.imshow(tags(night2, night1),cmap='gray');
+
+    fig.canvas.draw()
+
+    plt.show()
+
+    # -- write to file if desired
+    if oname is not None:
+        fig.savefig(oname, format='png',clobber=True)
+
+    return
