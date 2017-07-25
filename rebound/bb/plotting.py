@@ -23,7 +23,7 @@ def plot_image(img, clim=None, oname=None):
     ax.axis("off")
 
     # -- show the image
-    im = ax.imshow(img, cmap="gist_gray", clim=clim)
+    im = ax.imshow(img, cmap='gist_gray', clim=clim)
     fig.canvas.draw()
     plt.show()
 
@@ -132,7 +132,7 @@ def compare_curves(curves, ons, offs, night1, night2, off=True):
     
         return data[:,j[np.sort(idx)][::-1]].T
 
-    # -- set up the plot
+    # -- set up the plots
     fig, ax= plt.subplots(3, 1, figsize=(15, 20))
     ax1, ax2, ax3 = ax
 

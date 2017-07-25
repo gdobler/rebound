@@ -12,22 +12,35 @@ import matplotlib.pyplot as plt
 CURVES_PATH = os.path.join(os.environ['REBOUND_WRITE'], 'lightcurves') # location of lightcurves
 EDGE_PATH = os.path.join(os.environ['REBOUND_WRITE'], 'final_onoff') # location of lightcurves
 LABELED_MASK = np.load(os.path.join(os.environ['REBOUND_WRITE'], 'final','labels.npy'))
+HSI_MASK = np.load(os.path.join(os.environ['REBOUND_WRITE'], 'final','hsi_pixels3.npy'))
 IMG_SHAPE = (3072, 4096)  # dimensions of BK raw images
 CURVE_LENGTH = 2600
 NUM_CURVES = len([name for name in os.listdir(CURVES_PATH) if os.path.isfile(os.path.join(CURVES_PATH, name))])
 NUM_EDGES = int(len([name for name in os.listdir(EDGE_PATH) if os.path.isfile(os.path.join(EDGE_PATH, name))]) * 1.0 //2)
 LABELS,SIZES = np.unique(LABELED_MASK,return_counts=True)
 
-def clip_labels(lower_thresh = 20, upper_sig = 2):
+def clip_labels(cliptype = 'hsi', lower_thresh = 20, upper_sig = 2):
 
-	# upper thresh
-	thresh = SIZES[1:].mean() + SIZES[1:].std()*upper_sig
+	if cliptype == 'hsi':
+		hsi_l, hsi_s = np.unique(HSI_MASK,return_counts=True)
 
-	size_msk = (SIZES < thresh) & (SIZES > lower_thresh)
+		return hsi_l
 
-	return LABELS[size_msk]
+	elif cliptype == 'gowanus':
+		new_hsi = HSI_MASK[1000:1100,1610:1900].copy()
+		hsi_l, hsi_s = np.unique(new_hsi, return_counts=True)
 
-def load_lc(cube = True, clip=False):
+		return hsi_l
+
+	elif cliptype == 'manual':
+		# upper thresh
+		thresh = SIZES[1:].mean() + SIZES[1:].std()*upper_sig
+
+		size_msk = (SIZES < thresh) & (SIZES > lower_thresh)
+
+		return LABELS[size_msk]
+
+def load_lc(cube = True, clip=False, cliptype='hsi'):
 	"""
 	Loads previously extracted lightcuves. 
 	If cube = False, returns a 2-d array time series (num total multi night timesteps x num sources)
@@ -53,7 +66,7 @@ def load_lc(cube = True, clip=False):
 		curves = np.concatenate(all_curves, axis = 0)
 
 	if clip:
-		idx = clip_labels()
+		idx = clip_labels(cliptype=cliptype)
 
 		if cube:
 			return curves[:,:,idx]
@@ -64,7 +77,7 @@ def load_lc(cube = True, clip=False):
 		return curves
 
 
-def load_onoff(cube=True, clip=False):
+def load_onoff(cube=True, clip=False, cliptype='hsi'):
 
 	if cube:
 		ons = np.empty((NUM_EDGES, CURVE_LENGTH,len(LABELS[1:])))
@@ -104,7 +117,7 @@ def load_onoff(cube=True, clip=False):
 		offs = np.concatenate(all_offs, axis = 0)
 
 	if clip:
-		idx = clip_labels()
+		idx = clip_labels(cliptype=cliptype)
 
 		if cube:
 			return ons[:, :, idx], offs[:, :, idx]
@@ -115,9 +128,9 @@ def load_onoff(cube=True, clip=False):
 		return ons, offs
 
 
-def plot(data=LABELED_MASK, clip=False):
+def plot(data=LABELED_MASK, clip=False,cliptype='hsi'):
 	if clip:
-		final_msk = np.isin(data, clip_labels())
+		final_msk = np.isin(data, clip_labels(cliptype=cliptype))
 
 		data[~final_msk] = 0
 	
