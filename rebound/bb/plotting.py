@@ -33,6 +33,7 @@ def plot_image(img, clim=None, oname=None):
 
     return
 
+
 def quick_source_info(labeled_mask, clim=None, oname=None):
     """
     Plots a mask and upon mouse hover, sets plot title to: 
@@ -50,21 +51,21 @@ def quick_source_info(labeled_mask, clim=None, oname=None):
             cind = int(event.xdata)
 
             ax.set_title("Pixel: ({},{}) | Light Source #: {} | Source Pixel Size: {}".format(
-                rind, cind,labeled_mask[rind,cind],size[labeled_mask[rind,cind]]))
+                rind, cind, labeled_mask[rind, cind], size[labeled_mask[rind, cind]]))
 
             fig.canvas.draw()
 
     # -- plot mask
-    mask = np.zeros(labeled_mask.shape,dtype=bool)
+    mask = np.zeros(labeled_mask.shape, dtype=bool)
     idx = labeled_mask > 0
     mask[idx] = 255
 
     # -- set up the plot
-    fig, ax= plt.subplots(1, 1, figsize=(15, 15))
+    fig, ax = plt.subplots(1, 1, figsize=(15, 15))
 
     # -- show the image
     ax.axis("off")
-    im = ax.imshow(mask,interpolation='nearest', cmap='gist_gray',clim=clim)
+    im = ax.imshow(mask, interpolation='nearest', cmap='gist_gray', clim=clim)
 
     fig.canvas.draw()
     fig.canvas.mpl_connect('motion_notify_event', print_label)
@@ -73,9 +74,10 @@ def quick_source_info(labeled_mask, clim=None, oname=None):
 
     # -- write to file if desired
     if oname is not None:
-        fig.savefig(oname, format='png',clobber=True)
+        fig.savefig(oname, format='png', clobber=True)
 
     return
+
 
 def time_series(ts_array, clim=None, oname=None):
     """
@@ -100,19 +102,20 @@ def time_series(ts_array, clim=None, oname=None):
 
     # -- write to file if desired
     if oname is not None:
-        fig.savefig(oname, format='png',clobber=True)
+        fig.savefig(oname, format='png', clobber=True)
 
     return
 
-def bar_graph(data,interval):
+
+def bar_graph(data, interval):
     plt.bar()
 
 
-def compare_curves(curves, ons, offs, night1, night2, off=True):
+def compare_curves(curves, ons, offs, night1, night2, v_min=0.3, off=True):
 
     # utils
     first_night = np.datetime64('2017-06-25')
-    if off: 
+    if off:
         tag = -1
         tag_title = "Off"
     else:
@@ -124,26 +127,39 @@ def compare_curves(curves, ons, offs, night1, night2, off=True):
     offs *= -1.0
     master = ons + offs
 
-    def tags(night,sort_on):
-        i,j = np.where(master[sort_on,:,:]==tag)
+    def tags(night, sort_on):
+        i, j = np.where(master[sort_on, ::-1, :] == tag)
         _, idx = np.unique(j, return_index=True)
-        
-        data = curves[night]*1.0 / np.amax(curves[night],axis=0)
-    
-        return data[:,j[np.sort(idx)][::-1]].T
+
+        data = curves[night]*1.0 / np.amax(curves[night], axis=0)
+
+        x, y = np.where(master[night, :, j[np.sort(idx)][::-1]].T == tag)
+
+        return data[:, j[np.sort(idx)][::-1]].T, x, y
 
     # -- set up the plots
-    fig, ax= plt.subplots(3, 1, figsize=(15, 20))
+    fig, ax = plt.subplots(3, 1, figsize=(20, 20))
     ax1, ax2, ax3 = ax
 
     ax1.set_title("{} tags for {}".format(tag_title, first_night+night1))
-    ax1.imshow(tags(night1,night1),cmap='gray');
+    pnts, = ax1.plot(tags(night1, night1)[1], tags(night1, night1)[2], 'o', fillstyle='full',
+                     mec='orange', color='orange', ms=2)
+    ax1.imshow(tags(night1, night1)[0], cmap='gray',
+               interpolation='nearest', vmin=v_min, aspect='auto')
 
-    ax2.set_title("{} tags for {}, sorted on {}".format(tag_title, first_night+night2, first_night+night2))
-    ax2.imshow(tags(night2, night2),cmap='gray');
+    ax2.set_title("{} tags for {}, sorted on {}".format(
+        tag_title, first_night+night2, first_night+night2))
+    pnts, = ax2.plot(tags(night2, night2)[1], tags(night2, night2)[2], 'o', fillstyle='full',
+                     mec='orange', color='orange', ms=2)
+    ax2.imshow(tags(night2, night2)[0], cmap='gray',
+               interpolation='nearest', vmin=v_min, aspect='auto')
 
-    ax3.set_title("{} tags for {}, sorted on {}".format(tag_title, first_night+night2, first_night+night1))
-    ax3.imshow(tags(night2, night1),cmap='gray');
+    ax3.set_title("{} tags for {}, sorted on {}".format(
+        tag_title, first_night+night2, first_night+night1))
+    pnts, = ax3.plot(tags(night2, night1)[1], tags(night2, night1)[2], 'o', fillstyle='full',
+                     mec='orange', color='orange', ms=2)
+    ax3.imshow(tags(night2, night1)[0], cmap='gray',
+               interpolation='nearest', vmin=v_min, aspect='auto')
 
     fig.canvas.draw()
 
@@ -151,6 +167,6 @@ def compare_curves(curves, ons, offs, night1, night2, off=True):
 
     # -- write to file if desired
     if oname is not None:
-        fig.savefig(oname, format='png',clobber=True)
+        fig.savefig(oname, format='png', clobber=True)
 
     return
