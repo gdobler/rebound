@@ -27,7 +27,7 @@ NUM_EDGES = int(len([name for name in os.listdir(
 LABELS, SIZES = np.unique(LABELED_MASK, return_counts=True)
 
 
-def clip_labels(cliptype='hsi', ltype='all', lower_thresh=20, upper_sig=2):
+def clip_labels(cliptype='hsi', light_class='all', lower_thresh=20, upper_sig=2):
 
     if cliptype == 'hsi_mask':  # all sources in HSI mask
         hsi_l, hsi_s = np.unique(HSI_MASK, return_counts=True)
@@ -35,10 +35,10 @@ def clip_labels(cliptype='hsi', ltype='all', lower_thresh=20, upper_sig=2):
         return hsi_l
 
     elif cliptype == 'hsi':  # sources with classified spectra
-        if ltype == 'all':
+        if light_class == 'all':
             return SPECTRA_CLASS[SPECTRA_CLASS.columns[-4]].values
         else:
-            selector_msk = SPECTRA_CLASS[SPECTRA_CLASS.columns[-2]] == ltype
+            selector_msk = SPECTRA_CLASS[SPECTRA_CLASS.columns[-2]]==light_class
 
             return SPECTRA_CLASS[selector_msk][SPECTRA_CLASS.columns[-4]].values
 
@@ -57,7 +57,7 @@ def clip_labels(cliptype='hsi', ltype='all', lower_thresh=20, upper_sig=2):
         return LABELS[size_msk]
 
 
-def load_lc(cube=True, clip=False, cliptype='hsi', ltype='all'):
+def load_lc(cube=True, clip=None):
     """
     Loads previously extracted lightcuves. 
     If cube = False, returns a 2-d array time series (num total multi night timesteps x num sources)
@@ -82,19 +82,18 @@ def load_lc(cube=True, clip=False, cliptype='hsi', ltype='all'):
 
         curves = np.concatenate(all_curves, axis=0)
 
-    if clip:
-        idx = clip_labels(cliptype=cliptype, ltype=ltype)
+    if clip is not None:
 
         if cube:
-            return curves[:, :, idx]
+            return curves[:, :, clip]
         else:
-            return curves[:, idx]
+            return curves[:, clip]
 
     else:
         return curves
 
 
-def load_onoff(cube=True, clip=False, cliptype='hsi', ltype='all'):
+def load_onoff(cube=True, clip=None):
 
     if cube:
         ons = np.empty((NUM_EDGES, CURVE_LENGTH, len(LABELS[1:])))
@@ -127,21 +126,20 @@ def load_onoff(cube=True, clip=False, cliptype='hsi', ltype='all'):
 
         offs = np.concatenate(all_offs, axis=0)
 
-    if clip:
-        idx = clip_labels(cliptype=cliptype, ltype=ltype)
+    if clip is not None:
 
         if cube:
-            return ons[:, :, idx], offs[:, :, idx]
+            return ons[:, :, clip], offs[:, :, clip]
         else:
-            return ons[:, idx], offs[:, idx]
+            return ons[:, clip], offs[:, clip]
 
     else:
         return ons, offs
 
 
-def plot(data=LABELED_MASK, clip=False, cliptype='hsi', ltype='all'):
-    if clip:
-        final_msk = np.isin(data, clip_labels(cliptype=cliptype, ltype=ltype))
+def plot(data=LABELED_MASK, clip=None):
+    if clip is not None:
+        final_msk = np.isin(data, clip)
 
         data[~final_msk] = 0
 

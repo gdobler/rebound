@@ -7,16 +7,13 @@ import utils2
 import numpy as np
 
 
-def calc_dur():
+def calc_dur(ons, offs):
     """
     Takes as inputs, the on and off boolean cubes already created as outputs of detect_onoff.py
     Their shape: (num nights x num timesteps x num sources)
     Returns a 2-d array of duration for light curves (each source for each night),
     shape (num nights x num sources)
     """
-
-    ons, offs = utils2.load_onoff(clip=True)
-
     ons *= 1.0
     offs *= -1.0
 
