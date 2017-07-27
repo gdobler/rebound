@@ -146,6 +146,7 @@ def colin_inv_rad(params, xim, yim, r):
     x = e1 * e3 * r + xs
     y = e2 * e3 * r + ys
     z = e3 * r + zs
-    xyz = np.vstack([x, y, z]).T
+    #xyz = np.vstack([x, y, z]).T
 
-    return xyz
+    #return xyz
+    return x, y, z

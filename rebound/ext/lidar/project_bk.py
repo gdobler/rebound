@@ -28,9 +28,9 @@ except:
 #                    9.87891059e+05, 1.91728245e+05, 4.00726823e+02,
 #                    1.63556904e+04])
 
-# params = np.array([4.71238898038469, -1.26155483e-02, 2.39850465e-02,
-#                    9.87891059e+05, 1.91728245e+05, 5.00726823e+02,
-#                    1.63556904e+04])
+params = np.array([4.71238898038469, -1.26155483e-02, 2.39850465e-02,
+                    9.87891059e+05, 1.91728245e+05, 5.00726823e+02,
+                    1.63556904e+04])
 
 #params = np.array([1.46161933 + np.pi, 2.0 * -1.26155483e-02, 0.0,
 #                   9.87891059e+05, 1.91728245e+05, 5.00726823e+02,
@@ -41,18 +41,22 @@ except:
 #		    191271.86329059399, 241.22313013082243, 
 #		    14479.02080278723])
 
-params = np.array([1.4543399186245178, 0.031780597404047164, 6.2203534541077907,
-		   987922.03610049537, 191807.32999806647, 233.52199927717587,
-		   16534.751159015872])
+#params = np.array([1.4543399186245178, 0.031780597404047164, 6.2203534541077907,
+#		   987922.03610049537, 191807.32999806647, 233.52199927717587,
+#		   16534.751159015872])
+
+#params = np.array([4.58626623e+00, -5.60405800e-02, 1.03110986e-13,
+#       		   9.87909846e+05, 1.91300342e+05, 2.37734868e+02,
+#       		   1.46392513e+04])
 
 x0     = params[3]
 y0     = params[4]
-
 
 # -- initialize an image
 nrow = 4096
 ncol = 3072
 #ncol = 2160
+
 img = np.zeros((nrow, ncol), dtype=float)
 xgrid = np.zeros((nrow, ncol), dtype=float)
 ygrid = np.zeros((nrow, ncol), dtype=float)
@@ -69,17 +73,18 @@ coords = get_lidar_tiles()
 mm     = [[coords.xmin.min(), coords.ymin.min()],
           [coords.xmax.max(), coords.ymax.max()]]
 
-#rs = np.arange(0, 50000., 10.)
-rs = np.arange(0, 50000., 10.).reshape(5000, 1)
+rs = np.arange(0, 50000., 10.)
+#rs = np.arange(0, 50000., 10.).reshape(5000, 1)
 
-# for ii in range(nrow)[::10]:
-#     print("\r{0} : {1}".format(ii+1, nrow)),
-#     sys.stdout.flush()
-#     for jj in range(ncol)[::10]:
-for ii in range(nrow):
+for ii in range(nrow)[::10]:
     print("\r{0} : {1}".format(ii+1, nrow)),
     sys.stdout.flush()
-    for jj in range(ncol):
+    for jj in range(ncol)[::10]:
+
+#for ii in range(nrow):
+#    print("\r{0} : {1}".format(ii+1, nrow)),
+#    sys.stdout.flush()
+#    for jj in range(ncol):
 
         xx, yy, zz = colin_inv_rad(params, ii - nrow // 2, jj - ncol // 2, rs)
 
