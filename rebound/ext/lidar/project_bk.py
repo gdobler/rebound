@@ -76,15 +76,15 @@ mm     = [[coords.xmin.min(), coords.ymin.min()],
 rs = np.arange(0, 50000., 10.)
 #rs = np.arange(0, 50000., 10.).reshape(5000, 1)
 
-for ii in range(nrow)[::10]:
-    print("\r{0} : {1}".format(ii+1, nrow)),
-    sys.stdout.flush()
-    for jj in range(ncol)[::10]:
-
-#for ii in range(nrow):
+#for ii in range(nrow)[::10]:
 #    print("\r{0} : {1}".format(ii+1, nrow)),
 #    sys.stdout.flush()
-#    for jj in range(ncol):
+#    for jj in range(ncol)[::10]:
+
+for ii in range(nrow):
+     print("\r{0} : {1}".format(ii+1, nrow)),
+     sys.stdout.flush()
+     for jj in range(ncol):
 
         xx, yy, zz = colin_inv_rad(params, ii - nrow // 2, jj - ncol // 2, rs)
 
