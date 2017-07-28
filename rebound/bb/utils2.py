@@ -38,7 +38,7 @@ def get_timestamp(nights):
     for n in nights:
         data_dir = os.path.join(bb_settings.DATA_FILEPATH, n[0], n[1])
         night_dict[n] = [datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(
-            data_dir, file))) for file in sorted(os.listdir(data_dir))[100:2600]]
+            data_dir, file))) for file in sorted(os.listdir(data_dir))[100:2700]]
 
     return night_dict
 
