@@ -4,13 +4,14 @@
 import os
 import time
 import numpy as np
+import bb_settings
 from scipy.ndimage.filters import gaussian_filter as gf
 from scipy.ndimage import correlate1d
 
 # global variables
 # location of BK bband images
-DATA_FILEPATH = os.path.join(os.environ['REBOUND_WRITE'], 'lightcurves') # location of lightcurves
-IMG_SHAPE = (3072, 4096)  # dimensions of BK raw images
+# DATA_FILEPATH = os.path.join(os.environ['REBOUND_WRITE'], 'lightcurves') # location of lightcurves
+# IMG_SHAPE = (3072, 4096)  # dimensions of BK raw images
 
 
 def edge(curve,output_dir=None):
@@ -31,7 +32,7 @@ def edge(curve,output_dir=None):
     month,night  = curve.split('_')[-2],curve.split('_')[-1].split('.')[0]
     
     # -- read in lightcurves
-    lcs = np.load(os.path.join(DATA_FILEPATH,curve))
+    lcs = np.load(os.path.join(bb_settings.CURVES_FILEPATH,curve))
 
     # -- generate a mask
     print("generating mask for {} {}...".format(month,night))
@@ -158,7 +159,7 @@ def multi_nights(output_dir, all_nights=False, nights=None):
 
     start_all = time.time()
     if all_nights:
-        for lc in os.listdir(DATA_FILEPATH):
+        for lc in os.listdir(bb_settings.CURVES_FILEPATH):
             edge(curve=lc,output_dir=output_dir)
 
     else:

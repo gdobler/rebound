@@ -23,7 +23,7 @@ def plot_image(img, clim=None, oname=None):
     ax.axis("off")
 
     # -- show the image
-    im = ax.imshow(img, cmap='gist_gray', clim=clim)
+    im = ax.imshow(img, cmap='gist_gray', interpolation='nearest', clim=clim)
     fig.canvas.draw()
     plt.show()
 
