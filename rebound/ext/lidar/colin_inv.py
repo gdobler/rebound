@@ -3,6 +3,57 @@
 
 import numpy as np
 
+def colin(params, xyz_a):
+    """
+    This function returns centered image pixel coordinates x, y.
+    
+    Parameters
+    ----------
+    params : tuple
+        The camera parameters kappa, phi, omega, xs, ys, zs, and f.
+    xyz_a : float
+        The x, y, z coordinates in the object space, an ndarray.
+    
+    Returns:
+        The centered x, y pixel locations in the image, an ndarray.
+    """
+    # Unwrap params
+    kappa, phi, omega, xs, ys, zs, f = params
+
+    omega = float(omega)
+    phi = float(phi) + 0.5 * np.pi
+    kappa = float(kappa)
+    xs = float(xs)
+    ys = float(ys)
+    zs = float(zs)
+    f = float(f)
+
+    # -- utils
+    co = np.cos(omega)
+    so = np.sin(omega)
+    cp = np.cos(phi)
+    sp = np.sin(phi)
+    ck = np.cos(kappa)
+    sk = np.sin(kappa)
+
+    a1 =  cp*ck+sp*so*sk
+    b1 =  cp*sk+sp*so*ck
+    c1 =  sp*co
+    a2 = -co*sk
+    b2 =  co*ck
+    c2 =  so
+    a3 =  sp*ck+cp*so*sk
+    b3 =  sp*sk-cp*so*ck
+    c3 =  cp*co
+
+    ynum  = a1*(xyz_a[:,0]-xs)+b1*(xyz_a[:,1]-ys)+c1*(xyz_a[:,2]-zs)
+    xnum  = a2*(xyz_a[:,0]-xs)+b2*(xyz_a[:,1]-ys)+c2*(xyz_a[:,2]-zs)
+    denom = a3*(xyz_a[:,0]-xs)+b3*(xyz_a[:,1]-ys)+c3*(xyz_a[:,2]-zs)
+
+    xx = -f*xnum/denom
+    yy = f*ynum/denom
+
+    return np.vstack([xx,yy]).T    
 
 def colin_inv(params, xim, yim, z):
     """
