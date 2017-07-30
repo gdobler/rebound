@@ -191,7 +191,7 @@ def colin_inv_rad(params, xim, yim, r):
 
     e1 = (d6 * d2 - d3 * d5) / (d1 * d5 - d4 * d2)
     e2 = (d6 * d1 - d3 * d4) / (d2 * d4 - d5 * d1)
-    e3 = 1.0 / np.sqrt(1 + e1 * e1 + e2 * e2)
+    e3 = -1.0 / np.sqrt(1 + e1 * e1 + e2 * e2)
 
     # -- return the x, y, z location of the projected point
     x = e1 * e3 * r + xs

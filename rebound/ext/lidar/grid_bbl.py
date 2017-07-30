@@ -1,21 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 import sys
+import numpy as np
 import geopandas as gp
 from shapely.geometry import Point
 
 # -- load the x/y grid
-xgrid = np.load('../output/lwir_xgrid.npy')
-ygrid = np.load('../output/lwir_ygrid.npy')
+xgrid = np.load(os.path.join(os.environ["REBOUND_WRITE"], 'xgrid.npy'))
+ygrid = np.load(os.path.join(os.environ["REBOUND_WRITE"], 'ygrid.npy'))
 
 # -- read in the mappluto data
 print "reading data and extracting x,y of lot centroids"
-mn = gp.GeoDataFrame.from_file('../../data/mappluto/Manhattan/MNMapPLUTO.shp')
-mn_cenx = np.array([i.x for i in mn['geometry'].centroid])
-mn_ceny = np.array([i.y for i in mn['geometry'].centroid])
-mn_geo  = np.array(mn['geometry'])
-mn_bbl  = np.array(mn['BBL'])
+bk = gp.GeoDataFrame.from_file(os.path.join(os.environ["REBOUND_DATA"], "BKMapPLUTO.shp"))
+bk_cenx = np.array([i.x for i in bk['geometry'].centroid])
+bk_ceny = np.array([i.y for i in bk['geometry'].centroid])
+bk_geo  = np.array(bk['geometry'])
+bk_bbl  = np.array(bk['BBL'])
 
 # -- initialize bbl grid
 bblgrid = np.zeros(xgrid.shape)
@@ -30,12 +32,12 @@ for ii in range(nrow):
         xpos = xgrid[ii,jj]
         ypos = ygrid[ii,jj]
         pnt  = Point(xpos,ypos)
-        ind  = ((mn_cenx-xpos)**2+(mn_ceny-ypos)**2)<rad2
-        for geo,bbl in zip(mn_geo[ind],mn_bbl[ind]):
+        ind  = ((bk_cenx-xpos)**2+(bk_ceny-ypos)**2)<rad2
+        for geo,bbl in zip(bk_geo[ind],bk_bbl[ind]):
             if geo.contains(pnt):
                 bblgrid[ii,jj] = bbl
                 continue
 
 # -- write to file
-np.save('../output/lwir_bblgrid.npy',bblgrid)
+np.save(os.path.join(os.environ["REBOUND_WRITE"], 'bblgrid.npy'), bblgrid)
 

@@ -20,44 +20,31 @@ except:
 
 
 # -- set the camera parameters
-#params = np.array([1.46161933, -1.26155483e-02, 2.39850465e-02,
-#                   9.87891059e+05, 1.91728245e+05, 4.00726823e+02,
-#                   1.63556904e+04])
 
 # params = np.array([4.71238898038469, -1.26155483e-02, 2.39850465e-02,
 #                    9.87891059e+05, 1.91728245e+05, 4.00726823e+02,
 #                    1.63556904e+04])
 
-params = np.array([4.71238898038469, -1.26155483e-02, 2.39850465e-02,
-                    9.87891059e+05, 1.91728245e+05, 5.00726823e+02,
-                    1.63556904e+04])
+#params = np.array([4.71238898038469, -1.26155483e-02, 2.39850465e-02,
+#                    9.87891059e+05, 1.91728245e+05, 5.00726823e+02,
+#                    1.63556904e+04])
 
 #params = np.array([1.46161933 + np.pi, 2.0 * -1.26155483e-02, 0.0,
 #                   9.87891059e+05, 1.91728245e+05, 5.00726823e+02,
 #                   1.63556904e+04])
 
-#params = np.array([1.4441076473672112, 0.073528473736667793, 
-#		    0.062831853071795868,  987919.53048061754, 
-#		    191271.86329059399, 241.22313013082243, 
-#		    14479.02080278723])
-
-#params = np.array([1.4543399186245178, 0.031780597404047164, 6.2203534541077907,
-#		   987922.03610049537, 191807.32999806647, 233.52199927717587,
-#		   16534.751159015872])
-
-#params = np.array([4.58626623e+00, -5.60405800e-02, 1.03110986e-13,
-#       		   9.87909846e+05, 1.91300342e+05, 2.37734868e+02,
-#       		   1.46392513e+04])
+params = np.array([4.59086617e+00, -5.60380015e-02, 5.87195417e-03,
+                   9.87932695e+05, 1.91780076e+05, 3.16128741e+02,
+                   1.53237201e+04]) #best params
 
 x0     = params[3]
 y0     = params[4]
 
 # -- initialize an image
-nrow = 4096
-ncol = 3072
-#ncol = 2160
+nrow = 3072
+ncol = 4096
 
-img = np.zeros((nrow, ncol), dtype=float)
+dgrid = np.zeros((nrow, ncol), dtype=float)
 xgrid = np.zeros((nrow, ncol), dtype=float)
 ygrid = np.zeros((nrow, ncol), dtype=float)
 
@@ -67,14 +54,12 @@ ygrid = np.zeros((nrow, ncol), dtype=float)
 #    - find all x,y coordinates for which z is greater than projectws line
 #    - of those, find the closest
 
-#rs = np.arange(0, 50000., 0.5)
 # -- get the lidar tile names and range
 coords = get_lidar_tiles()
 mm     = [[coords.xmin.min(), coords.ymin.min()],
           [coords.xmax.max(), coords.ymax.max()]]
 
-rs = np.arange(0, 50000., 10.)
-#rs = np.arange(0, 50000., 10.).reshape(5000, 1)
+rs = np.arange(50, 50000., 1.)
 
 #for ii in range(nrow)[::10]:
 #    print("\r{0} : {1}".format(ii+1, nrow)),
@@ -86,7 +71,7 @@ for ii in range(nrow):
      sys.stdout.flush()
      for jj in range(ncol):
 
-        xx, yy, zz = colin_inv_rad(params, ii - nrow // 2, jj - ncol // 2, rs)
+        xx, yy, zz = colin_inv_rad(params, jj - ncol // 2, nrow // 2 - ii, rs)
 
         rind  = (yy - mm[0][1]).round().astype(int)
         cind  = (xx - mm[0][0]).round().astype(int)
@@ -104,22 +89,21 @@ for ii in range(nrow):
             continue
         if tall.max() == False:
             continue
+
         dd    = (xx[tall] - x0)**2 + (yy[tall] - y0)**2
 
 	close = np.arange(rind.size)[tall][dd.argmin()]
 
-        index = [rind[close], cind[close]]
+        #index = [rind[close], cind[close]]
        		
 	xgrid[ii, jj] = xx[close]
 	ygrid[ii, jj] = yy[close]
-	img[ii, jj] = dd.min()**0.5
-
-
+	dgrid[ii, jj] = dd.min()**0.5
 
 # -- visualize a distance grid
-timg = np.minimum(img[1:], img[:-1])
+#timg = np.minimum(img[1:], img[:-1])
 
 # -- saving outputs to file
 np.save(os.path.join(os.environ["REBOUND_WRITE"], 'xgrid.npy'), xgrid)
 np.save(os.path.join(os.environ["REBOUND_WRITE"], 'ygrid.npy'), ygrid)
-np.save(os.path.join(os.environ["REBOUND_WRITE"], 'distgrid.npy'), img)
+np.save(os.path.join(os.environ["REBOUND_WRITE"], 'dgrid.npy'), dgrid)
