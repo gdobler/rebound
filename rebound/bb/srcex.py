@@ -5,14 +5,16 @@ import numpy as np
 import os
 import time
 import random
+import bb_settings
 import matplotlib.pyplot as plt
 from scipy.ndimage.filters import gaussian_filter as gf
 from scipy.ndimage import measurements as mm
 
 
 # -- global variables
-DATA_FILEPATH = os.path.join(os.environ['REBOUND_DATA'],'bb','2017') # locatinon of BK bband images
-IMG_SHAPE = (3072,4096) # dimensions of BK raw images
+# locatinon of BK bband images
+# DATA_FILEPATH = os.path.join(os.environ['REBOUND_DATA'], 'bb', '2017')
+# IMG_SHAPE = (3072, 4096)  # dimensions of BK raw images
 
 
 def truncate_daylight(data_dir, daylight_step, plot):
@@ -49,24 +51,26 @@ def truncate_daylight(data_dir, daylight_step, plot):
     lum_list = []
 
     for i in sorted(os.listdir(data_dir))[::daylight_step]:
-        lum_list.append(np.memmap(os.path.join(data_dir, i), dtype=np.uint8, mode='r'))
-        lum_means = np.array(lum_list,dtype=np.float32).mean(1)
+        lum_list.append(np.memmap(os.path.join(
+            data_dir, i), dtype=np.uint8, mode='r'))
+        lum_means = np.array(lum_list, dtype=np.float32).mean(1)
 
-    if not plot: # crude analytical method
+    if not plot:  # crude analytical method
         thresh = np.median(lum_means)+0.5
-        file_start = np.where(lum_means<thresh)[0][0]*daylight_step+daylight_step
-        file_stop = np.where(lum_means<thresh)[0][-1]*daylight_step
+        file_start = np.where(lum_means < thresh)[0][
+            0]*daylight_step+daylight_step
+        file_stop = np.where(lum_means < thresh)[0][-1]*daylight_step
 
-        return file_start,file_stop
+        return file_start, file_stop
 
-    else: # plot method
+    else:  # plot method
 
         def vline_st(event):
             if event.inaxes == ax:
                 cind = int(event.xdata)
 
-                ax.axvline(cind,color='g')
-                   
+                ax.axvline(cind, color='g')
+
                 ax.set_title("File #: {0}".format(cind))
 
                 fig.canvas.draw()
@@ -77,8 +81,8 @@ def truncate_daylight(data_dir, daylight_step, plot):
             if event.inaxes == ax:
                 cind = int(event.xdata)
 
-                ax.axvline(cind,color='r')
-                   
+                ax.axvline(cind, color='r')
+
                 ax.set_title("File #: {0}".format(cind))
 
                 fig.canvas.draw()
@@ -86,7 +90,7 @@ def truncate_daylight(data_dir, daylight_step, plot):
                 print "File stop: {}".format(cind*daylight_step)
 
         # -- set up the plots
-        fig,ax = plt.subplots(1,figsize=(15, 5))
+        fig, ax = plt.subplots(1, figsize=(15, 5))
         im = ax.plot(lum_means)
 
         fig.canvas.draw()
@@ -97,7 +101,8 @@ def truncate_daylight(data_dir, daylight_step, plot):
 
         return
 
-def create_mask(nights, directory=DATA_FILEPATH, output=None, sh=IMG_SHAPE, step=5, multi=False, file_start=100,file_stop=2700, thresh=0.5, gfilter=None):
+
+def create_mask(nights, directory=bb_settings.DATA_FILEPATH, output=None, sh=bb_settings.IMG_SHAPE, step=5, multi=False, file_start=100, file_stop=2700, thresh=0.5, gfilter=None):
     '''
     Converts a series of raw images into a 2-D boolean mask array
     that indicates pixels that are highly correlated based on 
@@ -145,22 +150,22 @@ def create_mask(nights, directory=DATA_FILEPATH, output=None, sh=IMG_SHAPE, step
     if multi:
         lnight = 250
     else:
-        lnight = len(np.arange(file_start,file_stop,step))
+        lnight = len(np.arange(file_start, file_stop, step))
     nnights = len(nights)
 
-    # initialize image time-series datacube, 
-    # with known dims if using default file_start/file_stop (i.e. night only index)
-    img_cube = np.empty((nnights*lnight,sh[0],sh[1]),dtype=np.float32)
+    # initialize image time-series datacube,
+    # with known dims if using default file_start/file_stop (i.e. night only
+    # index)
+    img_cube = np.empty((nnights*lnight, sh[0], sh[1]), dtype=np.float32)
     idx = 0
-
 
     # -- load files for each select night and standardize
     for night in nights:
-        
-        # initialize night cube
-        imgs = np.empty((lnight,sh[0],sh[1]),dtype=np.float32)
 
-        data_dir = os.path.join(directory,night[0],night[1])
+        # initialize night cube
+        imgs = np.empty((lnight, sh[0], sh[1]), dtype=np.float32)
+
+        data_dir = os.path.join(directory, night[0], night[1])
 
         # load raw files
         print('Loading images for {}...'.format(night))
@@ -168,12 +173,12 @@ def create_mask(nights, directory=DATA_FILEPATH, output=None, sh=IMG_SHAPE, step
         nidx = 0
 
         if multi:
-            file_start = random.randint(file_start,file_stop-lnight)
+            file_start = random.randint(file_start, file_stop-lnight)
             file_stop = file_start+lnight
 
         for i in sorted(os.listdir(data_dir))[file_start:file_stop:step]:
-            imgs[nidx,:,:] = (np.fromfile(os.path.join(
-                    data_dir, i), dtype=np.uint8).reshape(sh[0], sh[1])).astype(np.float32)
+            imgs[nidx, :, :] = (np.fromfile(os.path.join(
+                data_dir, i), dtype=np.uint8).reshape(sh[0], sh[1])).astype(np.float32)
             nidx += 1
 
         # standardize
@@ -197,7 +202,7 @@ def create_mask(nights, directory=DATA_FILEPATH, output=None, sh=IMG_SHAPE, step
         # img_idx = np.isnan(imgs)
         imgs[np.isnan(imgs)] = 0
 
-        img_cube[idx:idx+imgs.shape[0],:,:] = imgs
+        img_cube[idx:idx+imgs.shape[0], :, :] = imgs
 
         idx += imgs.shape[0]
 
@@ -217,25 +222,26 @@ def create_mask(nights, directory=DATA_FILEPATH, output=None, sh=IMG_SHAPE, step
 
     # broadcasting mask to include both original pixels in all dimensions
     # across rows
-    corr_mask_ru = np.append(corr_mask_r,np.zeros((1,corr_mask_r.shape[1]),dtype=bool),axis=0)
-    corr_mask_rd = np.roll(corr_mask_ru,1,axis=0)
+    corr_mask_ru = np.append(corr_mask_r, np.zeros(
+        (1, corr_mask_r.shape[1]), dtype=bool), axis=0)
+    corr_mask_rd = np.roll(corr_mask_ru, 1, axis=0)
     corr_mask_r = corr_mask_ru | corr_mask_rd
 
     # across cols
-    corr_mask_cl = np.append(corr_mask_c,np.zeros((corr_mask_c.shape[0],1),dtype=bool),axis=1)
-    corr_mask_cr = np.roll(corr_mask_cl,1,axis=1)
+    corr_mask_cl = np.append(corr_mask_c, np.zeros(
+        (corr_mask_c.shape[0], 1), dtype=bool), axis=1)
+    corr_mask_cr = np.roll(corr_mask_cl, 1, axis=1)
     corr_mask_c = corr_mask_cl | corr_mask_cr
 
     # Merging the correlation masks in left-right and top-down directions
     mask_array = corr_mask_r | corr_mask_c
-
 
     # Create array of labeled light sources
     labels, num_features = mm.label(mask_array.astype(bool))
 
     stop_mask = time.time()
     print "Time to create final image mask: {}".format(stop_mask-time_loaded)
-    
+
     if output != None:
         print "Writing files to output..."
 
@@ -243,10 +249,10 @@ def create_mask(nights, directory=DATA_FILEPATH, output=None, sh=IMG_SHAPE, step
             os.makedirs(output)
 
         # write mask
-        np.save(os.path.join(output,'mask.npy'),mask_array)
+        np.save(os.path.join(output, 'mask.npy'), mask_array)
 
         # write labels
-        np.save(os.path.join(output,'labels.npy'),labels)
+        np.save(os.path.join(output, 'labels.npy'), labels)
 
         end = time.time()
         print "Total runtime: {}".format(end - start_mask)
@@ -261,6 +267,3 @@ def create_mask(nights, directory=DATA_FILEPATH, output=None, sh=IMG_SHAPE, step
         end = time.time()
         print "Total runtime: {}".format(end - start_mask)
         return output()
-
-
-

@@ -6,17 +6,17 @@ import os
 import time
 import matplotlib.pyplot as plt
 import srcex
+import bb_settings
 from scipy.ndimage.filters import gaussian_filter as gf
 from scipy.ndimage import measurements as mm
 
 
 # global variables
-# location of BK bband images
-DATA_FILEPATH = os.path.join(os.environ['REBOUND_DATA'], 'bb', '2017')
-IMG_SHAPE = (3072, 4096)  # dimensions of BK raw images
-MASK = np.load(os.path.join(os.environ['REBOUND_WRITE'], 'final', 'mask.npy'))
-LABELS = np.load(os.path.join(
-    os.environ['REBOUND_WRITE'], 'final', 'labels.npy'))
+# DATA_FILEPATH = os.path.join(os.environ['REBOUND_DATA'], 'bb', '2017')
+# IMG_SHAPE = (3072, 4096)  # dimensions of BK raw images
+# MASK = np.load(os.path.join(os.environ['REBOUND_WRITE'], 'final', 'mask.npy'))
+# LABELS = np.load(os.path.join(
+#     os.environ['REBOUND_WRITE'], 'final', 'labels.npy'))
 
 
 def get_curves(month, night, output_dir, file_start=100, file_stop=2700, step=6, create_ts_cube=False):
@@ -29,27 +29,27 @@ def get_curves(month, night, output_dir, file_start=100, file_stop=2700, step=6,
     # utilities
     lnight = len(np.arange(file_start, file_stop, step))
 
-    img_cube = np.empty((lnight, IMG_SHAPE[0], IMG_SHAPE[1]), dtype=np.float32)
+    img_cube = np.empty((lnight, bb_settings.IMG_SHAPE[0], bb_settings.IMG_SHAPE[1]), dtype=np.float32)
 
     nidx = 0
 
     print "Loading night files for {}_{}...".format(month, night)
 
     # load raw images
-    for i in sorted(os.listdir(os.path.join(DATA_FILEPATH, month, night)))[file_start:file_stop:step]:
-        img_cube[nidx, :, :] = (np.fromfile(os.path.join(DATA_FILEPATH, month, night, i), dtype=np.uint8).reshape(
-            IMG_SHAPE[0], IMG_SHAPE[1])).astype(np.float32)
+    for i in sorted(os.listdir(os.path.join(bb_settings.DATA_FILEPATH, month, night)))[file_start:file_stop:step]:
+        img_cube[nidx, :, :] = (np.fromfile(os.path.join(bb_settings.DATA_FILEPATH, month, night, i), dtype=np.uint8).reshape(
+            bb_settings.IMG_SHAPE[0], bb_settings.IMG_SHAPE[1])).astype(np.float32)
 
         nidx += 1
 
-    unique, size = np.unique(LABELS, return_counts=True)
+    unique, size = np.unique(bb_settings.LABELS_MASK, return_counts=True)
 
     print "Creating time series array for {}_{}...".format(month, night)
     source_ts = []
 
     for i in range(0, img_cube.shape[0]):
         src_sum = mm.sum(img_cube[i, :, :].astype(
-            np.float32), LABELS, index=unique[1:])
+            np.float32), bb_settings.LABELS_MASK, index=unique[1:])
         source_ts.append(src_sum.astype(np.float32)/size[1:])
 
     # stack sequence of time series into 2-d array time period x light source
@@ -66,7 +66,7 @@ def get_curves(month, night, output_dir, file_start=100, file_stop=2700, step=6,
         for i in range(0, ts_cube.shape[1]):
             for j in range(0, ts_cube.shape[2]):
                 if LABELS[i, j] != 0:
-                    ts_cube[:, i, j] = ts_array[:, LABELS[i, j]-1]
+                    ts_cube[:, i, j] = ts_array[:, bb_settings.LABELS_MASK[i, j]-1]
 
         ts_cube = ts_cube.astype(np.float32)
 
@@ -112,8 +112,8 @@ def multi_nights(output_dir, step=1, all_nights=False, nights=None):
 
     start_all = time.time()
     if all_nights:
-        for m in os.listdir(DATA_FILEPATH):
-            for n in os.listdir(os.path.join(DATA_FILEPATH, m)):
+        for m in os.listdir(bb_settings.DATA_FILEPATH):
+            for n in os.listdir(os.path.join(bb_settings.DATA_FILEPATH, m)):
                 get_curves(month=m, night=n,
                            output_dir=output_dir, step=step)
 
