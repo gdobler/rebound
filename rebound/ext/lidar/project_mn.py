@@ -1,32 +1,44 @@
+from __future__ import print_function
 import cv2
 import numpy as np
 from nycene_fiducials import lidar_fiducials, image_fiducials
 
 lidar_fid = lidar_fiducials("day_ref") # Nx3
 img_fid = image_fiducials("day_ref") # Nx2
-# taken from project.py. How was it obtained? TBFO
-focal_len = 1.63556904e+04
 nrow = 4096
 ncol = 2160
-# camera intrinsic parameters
-cam_mat = np.array([[focal_len, 0, ncol/2], 
-                    [0, focal_len, nrow/2], 
-                    [0, 0, 1]], dtype=np.float)
+img = np.zeros((nrow, ncol), dtype=np.uint8)
 
-# Obtaining rotation and translation matrix
-# i.e finding object pose from 3D-2D point correspondences
-# !!! Cannot give rotvec as 3x3, it only accepts 1x3 or 3x1 !!!
-_, rot_vec, trans_vec = cv2.solvePnP(objectPoints=lidar_fid.astype(np.float),
-                                     imagePoints=img_fid.astype(np.float),
-                                     cameraMatrix=cam_mat,
-                                     distCoeffs=np.zeros((1,4), dtype=np.float),
-                                     rvec=np.zeros((1,3)), tvec=np.zeros((1,3)), 
-                                     useExtrinsicGuess=True)
+print(" ... Obtaining camera intrinsic parameters")
+# CameraMatrix2D expects vector of vectors of points of type Point3f
+cam_matrix = cv2.initCameraMatrix2D(objectPoints=[lidar_fid.astype(np.float32)], 
+                                    imagePoints=[img_fid.astype(np.float32)], 
+                                    imageSize=img.shape, 
+                                    aspectRatio=0)
 
-# To verify, plugin the rot_vec and trans_vec
+print(" ... Obtaining distortion, rotation and translation matrix")
+# Get distortion, rotation and translation matrix
+# by using above cam_matrix as initial value
+_, _, distortion, rvec, tvec = cv2.calibrateCamera(objectPoints=[lidar_fid.astype(np.float32)], 
+                                                   imagePoints=[img_fid.astype(np.float32)], 
+                                                   imageSize=img.shape, 
+                                                   cameraMatrix=cam_matrix, 
+                                                   distCoeffs=None, 
+                                                   flags=cv2.CALIB_USE_INTRINSIC_GUESS)
+
+print(" ... Obtaining 2d projected point")
+# To verify, plugin the rvec and tvec
 # for projecting same lidar fiducials. 
 # Expecting the output to be similar to image fiducials
 proj2d, jacob = cv2.projectPoints(objectPoints=lidar_fid.astype(np.float), 
-                                  rvec=rot_vec, tvec=trans_vec, 
-                                  cameraMatrix=cam_mat,
-                                  distCoeffs=np.zeros((1,4), dtype=np.float))
+                                  rvec=rvec[0], tvec=tvec[0], 
+                                  cameraMatrix=cam_matrix.astype(np.float), 
+                                  distCoeffs=distortion.astype(np.float), 
+                                  aspectRatio=0)
+
+print()
+print("Points picked by hand: ")
+print(img_fid)
+print()
+print("Points obtained by projected: ")
+print(proj2d)
