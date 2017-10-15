@@ -20,7 +20,7 @@ def read_hour_stack(input_dir, rawfile, sh):
             Should be format: "night_stack_ncube10_[yearmonthdate]_[hour].raw"
 
     sh : tuple (Default reads in (848, 1600, 3194))
-            Desired file shape (nwav, nrow, ncol). 
+            Desired file shape (nwav, nrow, ncol).
 
 
     Returns
@@ -36,6 +36,27 @@ def read_hour_stack(input_dir, rawfile, sh):
 # def stack_scans(input_dir, output_dir):
 
 
+def mask_box(input_mask):
+    '''
+    Create a bounding box around nonzero values in a numpy mask (e.g. Gowanus).
+
+    Parameters
+    ----------
+    input_mask = 2-d numpy array
+        The numpy mask you want to create a bounding box within.
+
+    Returns
+    -------
+    Row min, row max, column min, column max for bounding box area with 
+    nonzero values.
+    '''
+    rows = np.any(input_mask, axis = 1)
+    cols = np.any(input_mask, axis = 0)
+
+    rmin, rmax = np.where(rows)[0][[0, -1]]
+    cmin, cmax = np.where(cols)[0][[0, -1]]
+
+    return rmin, rmax, cmin, cmax
 
 
 def sigma_clipping(input_file, sig=3, iter=10):
