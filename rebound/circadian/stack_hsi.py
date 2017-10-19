@@ -7,8 +7,7 @@ import time
 import datetime
 import numpy as np
 import settings
-from utils import read_hour_stack
-from utils import mask_box
+import utils
 
 def boxed_stack(input_mask, input_dir, sh, scale_factor, opath):
     '''
@@ -36,7 +35,7 @@ def boxed_stack(input_mask, input_dir, sh, scale_factor, opath):
     Dimensions for Gowanus mask are: ncol=286 x nwav = 848, nrow = 99
     '''
     
-    rmin, rmax, cmin, cmax = mask_box(input_mask)
+    rmin, rmax, cmin, cmax = utils.mask_box(input_mask)
 
     scan_list = []
 
@@ -46,12 +45,12 @@ def boxed_stack(input_mask, input_dir, sh, scale_factor, opath):
         
             print('reading {}...'.format(i))
 
-            # reads in scan, shape ncol x nwav x nrow
+            # reads in scan, shape ncol x nwav x nrow, reverse row, reshape to nwav, nrow, ncol
             data = np.memmap(os.path.join(input_dir,i), np.uint16, mode='r').reshape(
-            sh[2], sh[0], sh[1])
+            sh[2], sh[0], sh[1])[:,:,::-1].transpose(1,2,0)
 
             # truncate to bounding box dimensions and scale
-            data = data[cmin:cmax,:,rmin:rmax]*1.0/scale_factor
+            data = data[:,rmin:rmax,cmin:cmax]*1.0/scale_factor
 
             scan_list.append(data.astype(np.uint16))
 
@@ -63,7 +62,7 @@ def boxed_stack(input_mask, input_dir, sh, scale_factor, opath):
     end_stack = time.time()
     print('Time to stack: {}'.format(end_stack-end_read))
 
-    stack[:, :, ::-1].transpose(1, 2, 0).flatten().tofile(opath)
+    stack.transpose(2, 0, 1)[..., ::-1].flatten().tofile(opath)
 
     return
 

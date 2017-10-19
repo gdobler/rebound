@@ -6,18 +6,17 @@ import settings
 import numpy as np
 
 
-def read_hour_stack(input_dir, rawfile, sh):
+def read_hsi(input_dir, rawfile, sh):
     '''
-    Reads in raw file already stacked by hour.
+    Reads in raw file with no header.
 
     Parameters:
     -----------
     input_dir : str
-        Filepath for directory with stacked HSI scans.
+        Filepath for directory with HSI scans.
 
     rawfile : str
-            Filename for raw file of hourly stacked HSI scan.
-            Should be format: "night_stack_ncube10_[yearmonthdate]_[hour].raw"
+            Filename for raw file of HSI scan.
 
     sh : tuple (Default reads in (848, 1600, 3194))
             Desired file shape (nwav, nrow, ncol).
@@ -31,9 +30,7 @@ def read_hour_stack(input_dir, rawfile, sh):
     fpath = os.path.join(input_dir, rawfile)
 
     return np.memmap(fpath, np.uint16, mode='r').reshape(
-    	sh[2], sh[0], sh[1])[:, :, ::-1].transpose(1, 2, 0)
-
-# def stack_scans(input_dir, output_dir):
+    	sh[2], sh[0], sh[1])[:,:,::-1].transpose(1, 2, 0)
 
 
 def mask_box(input_mask):
