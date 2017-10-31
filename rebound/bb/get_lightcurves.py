@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import pandas as pd
 import os
 import time
 import matplotlib.pyplot as plt
@@ -32,11 +33,14 @@ def get_curves(month, night, output_dir, file_start=100, file_stop=2700, step=6,
     img_cube = np.empty((lnight, bb_settings.IMG_SHAPE[0], bb_settings.IMG_SHAPE[1]), dtype=np.float32)
 
     nidx = 0
+    tstep = []
 
     print "Loading night files for {}_{}...".format(month, night)
 
     # load raw images
     for i in sorted(os.listdir(os.path.join(bb_settings.DATA_FILEPATH, month, night)))[file_start:file_stop:step]:
+        tstep.append(int(os.path.getmtime(os.path.join(bb_settings.DATA_FILEPATH, month, night, i))))
+
         img_cube[nidx, :, :] = (np.fromfile(os.path.join(bb_settings.DATA_FILEPATH, month, night, i), dtype=np.uint8).reshape(
             bb_settings.IMG_SHAPE[0], bb_settings.IMG_SHAPE[1])).astype(np.float32)
 
@@ -47,13 +51,18 @@ def get_curves(month, night, output_dir, file_start=100, file_stop=2700, step=6,
     print "Creating time series array for {}_{}...".format(month, night)
     source_ts = []
 
+
     for i in range(0, img_cube.shape[0]):
         src_sum = mm.sum(img_cube[i, :, :].astype(
             np.float32), bb_settings.LABELS_MASK, index=unique[1:])
         source_ts.append(src_sum.astype(np.float32)/size[1:])
 
+
     # stack sequence of time series into 2-d array time period x light source
     ts_array = np.stack(source_ts)
+
+    ts_array = pd.DataFrame(ts_array, index=tstep)
+
 
     time_ts_array = time.time()
     print "Time to create {}_{} time series array: {}".format(month, night, time_ts_array - start)
