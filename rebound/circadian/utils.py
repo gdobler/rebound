@@ -66,7 +66,7 @@ def augment_mask(labels, min_thresh=3):
 
     labels *= np.array([in_labels(x) for x in labels.flatten()]).reshape(labels.shape)
 
-    # need to nump-ify....
+    # need to vectorize!!
     m = labels.copy()
 
     for i in range(1, labels.shape[0]):
