@@ -4,6 +4,7 @@
 import os
 import settings
 import numpy as np
+from scipy import ndimage as nd
 
 
 def read_hsi(input_dir, rawfile, sh):
@@ -54,6 +55,50 @@ def mask_box(input_mask):
     cmin, cmax = np.where(cols)[0][[0, -1]]
 
     return rmin, rmax, cmin, cmax
+
+
+def augment_mask(labels, min_thresh=3):
+    '''
+    Filter out broadband mask sources below minimum threshold and add pixels to left, right, up, down.
+    '''
+    uniq, size = np.unique(labels, return_counts=True)
+    in_labels = lambda x: x in uniq[size > min_thresh][1:]
+
+    labels *= np.array([in_labels(x) for x in labels.flatten()]).reshape(labels.shape)
+
+    # need to nump-ify....
+    m = labels.copy()
+
+    for i in range(1, labels.shape[0]):
+        for j in range(0, labels.shape[1]):
+            if labels[i, j] == 0:
+                m[i, j] = labels[i-1, j]
+
+    n = m.copy()
+
+    for i in range(0, labels.shape[0]):
+        for j in range(1, labels.shape[1]):
+            if m[i, j] == 0:
+                n[i, j] = m[i, j-1]
+
+    n = n[::-1,::-1]
+    o = n.copy()
+
+    for i in range(1, labels.shape[0]):
+        for j in range(0, labels.shape[1]):
+            if n[i, j] == 0:
+                o[i, j] = n[i-1, j]
+
+    p = o.copy()
+
+    for i in range(0, labels.shape[0]):
+        for j in range(1, labels.shape[1]):
+            if o[i, j] == 0:
+                p[i, j] = o[i, j-1]
+
+    return o[::-1,::-1]
+
+
 
 
 def sigma_clipping(input_file, sig=3, iter=10):
