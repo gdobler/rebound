@@ -4,17 +4,20 @@
 import os
 import time
 import numpy as np
+import pandas as pd
 import bb_settings
+from datetime import datetime
+from dateutil import tz
 from scipy.ndimage.filters import gaussian_filter as gf
 from scipy.ndimage import correlate1d
 
 # global variables
 # location of BK bband images
-# DATA_FILEPATH = os.path.join(os.environ['REBOUND_WRITE'], 'lightcurves') # location of lightcurves
+DATA_FILEPATH = os.path.join(os.environ['REBOUND_WRITE'], 'lightcurves') # location of lightcurves
 # IMG_SHAPE = (3072, 4096)  # dimensions of BK raw images
 
 
-def edge(curve,output_dir=None):
+def edge(curve,csv_file = False, output_dir=None):
     """
     Detect the on/off transitions for lightcurves and write to a file.
 
@@ -32,7 +35,14 @@ def edge(curve,output_dir=None):
     month,night  = curve.split('_')[-2],curve.split('_')[-1].split('.')[0]
     
     # -- read in lightcurves
-    lcs = np.load(os.path.join(bb_settings.CURVES_FILEPATH,curve))
+    if csv_file:
+        df = pd.read_csv(os.path.join(bb_settings.CURVES_FILEPATH,curve))
+        tstamp = df[df.columns[0]].apply(lambda x: pd.to_datetime(x, unit='s',utc=True).astimezone(tz.gettz('America/New_York')))
+        del df[df.columns[0]]
+        lcs = df.values
+
+    else:
+        lcs = np.load(os.path.join(bb_settings.CURVES_FILEPATH,curve))
 
     # -- generate a mask
     print("generating mask for {} {}...".format(month,night))
@@ -144,6 +154,7 @@ def edge(curve,output_dir=None):
                 self.gd = lcs_gd
                 self.ons = good_ons
                 self.offs = good_offs
+                self.tstamp = tstamp
 
         end = time.time()
         print "Total runtime: {}".format(end - start)
