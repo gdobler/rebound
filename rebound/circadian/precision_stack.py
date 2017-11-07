@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import numpy as np
+
 '''
 PSEUDO CODE
 
@@ -40,6 +45,35 @@ def on_state(ons, offs, tstamp):
 	Takes on and off indices and returns a 2-d array 
 	that expresses true if light is on (numsources x timestep)
 	'''
-	lights_on = np.zeros((ons.shape[0],ons.shape[1]), dtype=bool)
+	lights_on = np.zeros((ons.shape[0],ons.shape[1]), dtype=bool) # boolean of light state per source x timestep
+	state = np.zeros((ons.shape[0]), dtype=bool) # current state of each light source: on/off
 
-	
+	# forward pass
+	for j in range(ons.shape[1]):
+
+		state = ons[:,j] | state # turn state on if "on" index true (or keep on if previously on)
+
+		state = (state & ~offs[:,j]) # turn state off if "off" index true
+
+		lights_on[:,j] = state 	# set light state at each timestep
+
+	# reverse indices and reset state
+	lights_on = lights_on[:,::-1]
+	ons = ons[:,::-1]
+	offs = offs[:,::-1]
+	state = np.zeros((ons.shape[0]), dtype=bool)
+
+	# backward pass
+	for j in range(ons.shape[1]):
+
+		state = ons[:,j] | state # turn state on if "on" index true (or keep on if previously on)
+
+		state = (state & ~offs[:,j]) # turn state off if "off" index true
+
+		lights_on[:,j] = lights_on[:,j] | state # set light state at each timestep, but ignore if previous True
+
+
+	return lights_on[:,::-1], tstamp # return lights on array (reversed back to original) and tstamp index
+
+
+
