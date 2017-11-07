@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 import numpy as np
+import pandas as pd
+import cPickle as pickle
+import time
 
 '''
 PSEUDO CODE
@@ -40,7 +44,7 @@ stacked <- summation of all H in sequence along lightwave axis
 
 # first method --> determine on-state
 
-def on_state(ons, offs, tstamp):
+def on_state(ons, offs, tstamp=None):
 	'''
 	Takes on and off indices and returns a 2-d array 
 	that expresses true if light is on (numsources x timestep)
@@ -72,8 +76,63 @@ def on_state(ons, offs, tstamp):
 
 		lights_on[:,j] = lights_on[:,j] | state # set light state at each timestep, but ignore if previous True
 
+	if tstamp is not None:
+		return lights_on[:,::-1], tstamp  # return lights on array (reversed back to original)
+	else:
+		return lights_on[:,::-1]
 
-	return lights_on[:,::-1], tstamp # return lights on array (reversed back to original) and tstamp index
 
+def multi_night(input_dir, output_dir):
+	'''
+	From input of director reads in on/off indices from edge object produced
+	by detect_onoff and returns a 2-D array that expresses True if a light
+	source is on (nsources x ntimesteps across all nights)
 
+	Parameters:
+	-----------
+	input_dir : str
+		Filepath for directory with edge objects.
 
+		Each edge object is a tuple with component at index:
+		0: lightcurves
+		1: lc after Gaussian filter
+		2: on indices
+		3: off indices
+		4: timestamp (index)
+	'''
+	start = time.time()
+
+	# utilities
+	num_sourcs = 6870
+	num_nights = len([f for f in os.listdir(input_dir)])
+	all_tstamps = []
+
+	# initialize  empty array
+	light_states = np.empty((num_sources, num_nights*2600), dtype=bool)
+
+	idx = 0
+
+	for i in sorted(os.listdir(input_dir)):
+		start_night = time.time()
+		print("Loading {}".format(i))
+
+		with open(os.path.join(input_dir, i), 'rb') as p:
+			edge = pickle.load(p)
+
+		# append timestamp
+		all_tstamps.append(edge[4])
+
+		print('Determining on state for {}'.format(i))
+		# run on_state
+		light_states[:,idx:idx+2600] = on_state(ons = edge[2], offs = edge[3])
+
+		idx += 2600
+		print('Time for {}: {}'.format(i, time.time() - start_night))
+
+	all_tstamps = np.concatenate(all_tstamps)
+
+	df = pd.DataFrame(light_states.T, index=all_tstamps)
+	
+	df.to_csv(os.path.join(output_dir, 'light_states_all_time.csv'))
+	print('Total time for {} nights: {}'.format(num_nights, time.time() - start))
+	return
