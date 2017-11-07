@@ -143,7 +143,7 @@ def convert_raws(path, fac=1, gray=False):
         scl = np.array([1.0, 1.0, 1.0])
 
     # -- get the file names
-    fnames = [os.path.join(path, i) for i in sorted(os.listdir(path)) if 
+    fnames = [os.path.join(path, i) for i in sorted(os.listdir(path))[100:2700] if 
               ".raw" in i]
     nfiles = len(fnames)
 

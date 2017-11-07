@@ -102,7 +102,8 @@ def truncate_daylight(data_dir, daylight_step, plot):
         return
 
 
-def create_mask(nights, directory=bb_settings.DATA_FILEPATH, output=None, sh=bb_settings.IMG_SHAPE, step=5, multi=False, file_start=100, file_stop=2700, thresh=0.5, gfilter=None):
+def create_mask(nights, directory=bb_settings.DATA_FILEPATH, output=None, 
+    sh=bb_settings.IMG_SHAPE, step=5, multi=False, file_start=100, file_stop=2700, thresh=0.5, gfilter=None):
     '''
     Converts a series of raw images into a 2-D boolean mask array
     that indicates pixels that are highly correlated based on 
