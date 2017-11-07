@@ -14,18 +14,15 @@ Stack HSI scans during "on" times
 ---------------------------------
 
 
-G <- READ 2-d boolean array of Gowanus sources "on" times as indexed by timestamp (nsource x ntimeperiods)
+G <- READ 2-d boolean array of Gowanus sources "on" times as indexed by timestamp (nobs x nsources)
 
 labels <- READ 2-d array of Gowanus source labels (nrows x ncols)
-
-
 
 SEQUENCE of HSI raw files
 	ht <- READ HSI timestamp
 
 	min <- ht - 5 minutes
 	max <- ht + 5 min
-
 
 	FOR s in G
 		s_on = False
@@ -41,52 +38,54 @@ SEQUENCE of HSI raw files
 stacked <- summation of all H in sequence along lightwave axis
 '''
 
-
 # first method --> determine on-state
+
+# ---> GLOBAL VARIABLES
+gow_labels = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','gowanus_labels_box.npy'))
+
 
 def on_state(ons, offs, tstamp=None):
 	'''
-	Takes on and off indices and returns a 2-d array 
-	that expresses true if light is on (numsources x timestep)
+	Takes on and off indices (num obs x num sources) and returns a 2-d array 
+	that expresses true if light is on (nobs x nsources)
 	'''
-	lights_on = np.zeros((ons.shape[0],ons.shape[1]), dtype=bool) # boolean of light state per source x timestep
-	state = np.zeros((ons.shape[0]), dtype=bool) # current state of each light source: on/off
+	lights_on = np.zeros((ons.shape[0],ons.shape[1]), dtype=bool) # boolean of light state per obs x source
+	state = np.zeros((ons.shape[1]), dtype=bool) # current state of each light source: on/off
 
 	# forward pass
-	for j in range(ons.shape[1]):
+	for i in range(ons.shape[0]):
 
-		state = ons[:,j] | state # turn state on if "on" index true (or keep on if previously on)
+		state = ons[i,:] | state # turn state on if "on" index true (or keep on if previously on)
 
-		state = (state & ~offs[:,j]) # turn state off if "off" index true
+		state = (state & ~offs[i,:]) # turn state off if "off" index true
 
-		lights_on[:,j] = state 	# set light state at each timestep
+		lights_on[i,:] = state 	# set light state at each timestep
 
 	# reverse indices and reset state
-	lights_on = lights_on[:,::-1]
-	ons = ons[:,::-1]
-	offs = offs[:,::-1]
-	state = np.zeros((ons.shape[0]), dtype=bool)
+	lights_on = lights_on[::-1,:]
+	ons = ons[::-1,:]
+	offs = offs[::-1,:]
+	state = np.zeros((ons.shape[1]), dtype=bool)
 
 	# backward pass
-	for j in range(ons.shape[1]):
+	for i in range(ons.shape[0]):
 
-		state = ons[:,j] | state # turn state on if "on" index true (or keep on if previously on)
+		state = ons[i,:] | state # turn state on if "on" index true (or keep on if previously on)
 
-		state = (state & ~offs[:,j]) # turn state off if "off" index true
+		state = (state & ~offs[i,:]) # turn state off if "off" index true
 
-		lights_on[:,j] = lights_on[:,j] | state # set light state at each timestep, but ignore if previous True
+		lights_on[i,:] = lights_on[i,:] | state # set light state at each timestep, but ignore if previous True
 
 	if tstamp is not None:
-		return lights_on[:,::-1], tstamp  # return lights on array (reversed back to original)
+		return lights_on[::-1,:], tstamp  # return lights on array (reversed back to original)
 	else:
-		return lights_on[:,::-1]
-
+		return lights_on[::-1,:]
 
 def multi_night(input_dir, output_dir):
 	'''
 	From input of director reads in on/off indices from edge object produced
 	by detect_onoff and returns a 2-D array that expresses True if a light
-	source is on (nsources x ntimesteps across all nights)
+	source is on (nobs across all nights x nsources)
 
 	Parameters:
 	-----------
@@ -103,12 +102,12 @@ def multi_night(input_dir, output_dir):
 	start = time.time()
 
 	# utilities
-	num_sourcs = 6870
+	num_sources = 6870
 	num_nights = len([f for f in os.listdir(input_dir)])
 	all_tstamps = []
 
 	# initialize  empty array
-	light_states = np.empty((num_sources, num_nights*2600), dtype=bool)
+	light_states = np.empty((num_nights*2600, num_sources), dtype=bool)
 
 	idx = 0
 
@@ -124,15 +123,16 @@ def multi_night(input_dir, output_dir):
 
 		print('Determining on state for {}'.format(i))
 		# run on_state
-		light_states[:,idx:idx+2600] = on_state(ons = edge[2], offs = edge[3])
+		light_states[idx:idx+2600,:] = on_state(ons = edge[2], offs = edge[3])
 
 		idx += 2600
 		print('Time for {}: {}'.format(i, time.time() - start_night))
 
 	all_tstamps = np.concatenate(all_tstamps)
 
-	df = pd.DataFrame(light_states.T, index=all_tstamps)
-	
-	df.to_csv(os.path.join(output_dir, 'light_states_all_time.csv'))
+	with open(os.path.join(output_dir,'light_states_all_time.pkl'), 'wb') as file:
+		l = light_states, all_tstamps
+		pickle.dump(l, file, pickle.HIGHEST_PROTOCOL)
+
 	print('Total time for {} nights: {}'.format(num_nights, time.time() - start))
 	return
