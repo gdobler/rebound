@@ -5,6 +5,7 @@ import os
 import time
 import numpy as np
 import pandas as pd
+import cPickle as pickle
 import bb_settings
 from datetime import datetime
 from dateutil import tz
@@ -17,7 +18,7 @@ DATA_FILEPATH = os.path.join(os.environ['REBOUND_WRITE'], 'lightcurves') # locat
 # IMG_SHAPE = (3072, 4096)  # dimensions of BK raw images
 
 
-def edge(curve,csv_file = False, output_dir=None):
+def edge(curve, csv_file = False, output_dir=None):
     """
     Detect the on/off transitions for lightcurves and write to a file.
 
@@ -122,48 +123,28 @@ def edge(curve,csv_file = False, output_dir=None):
     # ons = lcs * good_ons
     # offs = lcs * good_offs
 
-    if output_dir != None:
-        print("writing ons/offs to files...")
-
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-
-        # gaussian difference
-        # np.save(os.path.join(
-        #     output_dir, 'lightcurves_gd_{}_{}.npy'.format(month, night)), lcs_gd)
-
-        # on tags
-        np.save(os.path.join(
-            output_dir, '{}_{}_ons.npy'.format(month, night)), good_ons)
-
-        # off tags
-        np.save(os.path.join(
-            output_dir, '{}_{}_offs.npy'.format(month, night)), good_offs)
-
-
-        end = time.time()
-        print "Total runtime: {}".format(end - start)
-
-        return
-
-    else:
+    if output_dir is None:
         class output():
 
-            def __init__(self):
+            def __init__(self, lcs, lcs_gd, good_ons, good_offs, tstamp):
                 self.curves = lcs
                 self.gd = lcs_gd
                 self.ons = good_ons
                 self.offs = good_offs
                 self.tstamp = tstamp
 
-        end = time.time()
-        print "Total runtime: {}".format(end - start)
-        return output()
+        return output(lcs, lcs_gd, good_ons, good_offs, tstamp)
+
+    else:
+        with open(os.path.join(output_dir, 'edge_obj_{}_{}.pkl'.format(month, night)), 'wb') as o:
+            edge_obj = lcs, lcs_gd, good_ons, good_offs, tstamp
+            pickle.dump(edge_obj, o, pickle.HIGHEST_PROTOCOL)
+
+    end = time.time()
+    print "Total runtime: {}".format(end - start)
 
 
-
-
-def multi_nights(output_dir, all_nights=False, nights=None):
+def multi_nights(output_dir, csv_file=False, all_nights=False, nights=None):
     """
     Nights input is str or list of strs, formated as: "06_25"  etc
     """
@@ -171,10 +152,10 @@ def multi_nights(output_dir, all_nights=False, nights=None):
     start_all = time.time()
     if all_nights:
         for lc in os.listdir(bb_settings.CURVES_FILEPATH):
-            edge(curve=lc,output_dir=output_dir)
+            edge(curve=lc,csv_file=csv_file, output_dir=output_dir)
 
     else:
         for n in nights:
-            edge(curve='lightcurves_{}.npy'.format(n),output_dir=output_dir)
+            edge(curve='lightcurves_{}.csv'.format(n),output_dir=output_dir)
             
     print "Total runtime for all nights: {}".format(time.time() - start_all)
