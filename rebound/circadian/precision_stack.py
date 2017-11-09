@@ -6,10 +6,10 @@ import numpy as np
 import pandas as pd
 import cPickle as pickle
 import time
+import datetime
+from dateutil import tz
 
 '''
-PSEUDO CODE
-
 Stack HSI scans during "on" times
 ---------------------------------
 
@@ -41,45 +41,55 @@ stacked <- summation of all H in sequence along lightwave axis
 # first method --> determine on-state
 
 # ---> GLOBAL VARIABLES
-gow_labels = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','gowanus_labels_box.npy'))
+gow_row = (900, 1200)
+gow_col = (1400, 2200)
+LABELS = np.load(os.path.join(os.environ['REBOUND_WRITE'], 'final', 'hsi_pixels3.npy'))[
+                 gow_row[0]:gow_row[1], gow_col[0]:gow_col[1]]
 
 
 def on_state(ons, offs, tstamp=None):
 	'''
-	Takes on and off indices (num obs x num sources) and returns a 2-d array 
+	Takes on and off indices (num obs x num sources) and returns a 2-d array
 	that expresses true if light is on (nobs x nsources)
 	'''
-	lights_on = np.zeros((ons.shape[0],ons.shape[1]), dtype=bool) # boolean of light state per obs x source
-	state = np.zeros((ons.shape[1]), dtype=bool) # current state of each light source: on/off
+	lights_on = np.zeros((ons.shape[0], ons.shape[
+	                     1]), dtype=bool)  # boolean of light state per obs x source
+	# current state of each light source: on/off
+	state = np.zeros((ons.shape[1]), dtype=bool)
 
 	# forward pass
 	for i in range(ons.shape[0]):
 
-		state = ons[i,:] | state # turn state on if "on" index true (or keep on if previously on)
+		# turn state on if "on" index true (or keep on if previously on)
+		state = ons[i, :] | state
 
-		state = (state & ~offs[i,:]) # turn state off if "off" index true
+		state = (state & ~offs[i, :])  # turn state off if "off" index true
 
-		lights_on[i,:] = state 	# set light state at each timestep
+		lights_on[i, :] = state 	# set light state at each timestep
 
 	# reverse indices and reset state
-	lights_on = lights_on[::-1,:]
-	ons = ons[::-1,:]
-	offs = offs[::-1,:]
+	lights_on = lights_on[::-1, :]
+	ons = ons[::-1, :]
+	offs = offs[::-1, :]
 	state = np.zeros((ons.shape[1]), dtype=bool)
 
 	# backward pass
 	for i in range(ons.shape[0]):
 
-		state = ons[i,:] | state # turn state on if "on" index true (or keep on if previously on)
+		# turn state on if "on" index true (or keep on if previously on)
+		state = ons[i, :] | state
 
-		state = (state & ~offs[i,:]) # turn state off if "off" index true
+		state = (state & ~offs[i, :])  # turn state off if "off" index true
 
-		lights_on[i,:] = lights_on[i,:] | state # set light state at each timestep, but ignore if previous True
+		# set light state at each timestep, but ignore if previous True
+		lights_on[i, :] = lights_on[i, :] | state
 
 	if tstamp is not None:
-		return lights_on[::-1,:], tstamp  # return lights on array (reversed back to original)
+		# return lights on array (reversed back to original)
+		return lights_on[::-1, :], tstamp
 	else:
-		return lights_on[::-1,:]
+		return lights_on[::-1, :]
+
 
 def multi_night(input_dir, output_dir):
 	'''
@@ -123,16 +133,45 @@ def multi_night(input_dir, output_dir):
 
 		print('Determining on state for {}'.format(i))
 		# run on_state
-		light_states[idx:idx+2600,:] = on_state(ons = edge[2], offs = edge[3])
+		light_states[idx:idx+2600, :] = on_state(ons=edge[2], offs=edge[3])
 
 		idx += 2600
 		print('Time for {}: {}'.format(i, time.time() - start_night))
 
 	all_tstamps = np.concatenate(all_tstamps)
 
-	with open(os.path.join(output_dir,'light_states_all_time.pkl'), 'wb') as file:
+	with open(os.path.join(output_dir, 'light_states_all_time.pkl'), 'wb') as file:
 		l = light_states, all_tstamps
 		pickle.dump(l, file, pickle.HIGHEST_PROTOCOL)
 
 	print('Total time for {} nights: {}'.format(num_nights, time.time() - start))
 	return
+
+
+def precision_stack(input_dir, month, night, window=5):
+	'''
+	ADD DOCS!
+	'''
+	# --> utilities
+
+	fpath = os.path.join(input_dir, month, night)
+
+	for i in os.listdir(fpath):
+		if i.split('.')[-1] == 'raw':
+
+			# read in timestamp and define window
+			tstamp = datetime.datetime.fromtimestamp(
+			    os.path.getmtime(i), tz=tz.gettz('America/New_York'))
+
+            min_bound = tstamp - timedelta(minutes = window)
+            max_bound = tstamp + timedelta(minutes = window)
+
+             
+
+			# reads in scan, shape ncol x nwav x nrow, reverse row, 
+			# slice to Gowanus dims, transpose to nwav, nrow, ncol
+            data = np.memmap(os.path.join(fpath,i), np.uint16, mode='r').reshape(
+            sh[2], sh[0], sh[1])[:,:,::-1][gow_col[0]:gow_col[1],:,gow_row[0]:gow_row[1]].transpose(1,2,0)
+
+
+
