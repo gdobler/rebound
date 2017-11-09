@@ -176,6 +176,7 @@ def precision_stack(input_dir, month, night, spath, opath, window=5):
 
 	'''
 	# --> utilities
+	start = time.time()
 
 	fpath = os.path.join(input_dir, month, night)
 
@@ -193,7 +194,7 @@ def precision_stack(input_dir, month, night, spath, opath, window=5):
 		if i.split('.')[-1] == 'raw':
 
 			print('Reading in {}...'.format(i))
-
+			start_raw = time.time()
 			# read in timestamp and define window
 			hsi_tstamp = datetime.datetime.fromtimestamp(
 			    os.path.getmtime(os.path.join(fpath,i)), tz=tz.gettz('America/New_York'))
@@ -226,11 +227,12 @@ def precision_stack(input_dir, month, night, spath, opath, window=5):
 			data = data*mask3d
 
 			HSI_list.append(data)
-
+			print('Time for {}:{}'.format(i, time.time()-start_raw))
 
 	print('Stacking...')
 	stack = reduce(np.add, HSI_list)
 
-	stack.transpose(2, 0, 1)[..., ::-1].flatten().tofile(opath)
 
+	stack.transpose(2, 0, 1)[..., ::-1].flatten().tofile(opath)
+	print('Total runtime {}'.format(time.time()-start))
 
