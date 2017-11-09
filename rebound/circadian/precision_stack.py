@@ -148,30 +148,89 @@ def multi_night(input_dir, output_dir):
 	return
 
 
-def precision_stack(input_dir, month, night, window=5):
+def load_states(state_path):
 	'''
-	ADD DOCS!
+	Loads pickle object of states, returns 2-d array of states and 1-d array of
+	timestamps in np.datetime64. Converts dates to datetime objects
+	'''
+	print('Reading in broadband timestamps and making tz aware...')
+	with open(state_path, 'rb') as i:
+		states, tstamps = pickle.load(i)
+
+	tstamps = tstamps.astype('M8[s]').astype('O')
+
+	new_tz = np.vectorize(lambda x: x.replace(
+	    tzinfo=tz.gettz('America/New York')))
+
+	aware = new_tz(tstamps)
+
+	return states, aware
+
+
+def precision_stack(input_dir, month, night, spath, opath, window=5):
+	'''
+	Input_dir : path to HSI raw files
+	spath : path to pickle object of broadband state array and timestamps
+	opath : path to save stacked scans
+	window : temporal window within which to stack
+
 	'''
 	# --> utilities
 
 	fpath = os.path.join(input_dir, month, night)
 
+	states, bb_tstamp = load_states(spath)
+
+	sh = (848, 1600, 3194)
+
+	# index of set of labels in Gowanus source array (except 0)
+	g_idx = np.unique(LABELS)[1:]
+
+	HSI_list = []
+
+	# read in HSI
 	for i in os.listdir(fpath):
 		if i.split('.')[-1] == 'raw':
 
+			print('Reading in {}...'.format(i))
+
 			# read in timestamp and define window
-			tstamp = datetime.datetime.fromtimestamp(
-			    os.path.getmtime(i), tz=tz.gettz('America/New_York'))
+			hsi_tstamp = datetime.datetime.fromtimestamp(
+			    os.path.getmtime(os.path.join(fpath,i)), tz=tz.gettz('America/New_York'))
 
-            min_bound = tstamp - timedelta(minutes = window)
-            max_bound = tstamp + timedelta(minutes = window)
+			min_bound = hsi_tstamp - datetime.timedelta(minutes=window)
+			max_bound = hsi_tstamp + datetime.timedelta(minutes=window)
 
-             
+			# indices of states index that are in window
+			window_idx = np.where((bb_tstamp < max_bound) & (bb_tstamp > min_bound))[0]
 
-			# reads in scan, shape ncol x nwav x nrow, reverse row, 
+			# slice by time
+			states_win = states[window_idx, :]
+
+			# if any light source is on during window, evaluate to True and
+			# list indices thare are the source labels in the broadband mask
+			t_idx = np.where(np.any(states_win, axis=0))[0]
+
+			# reads in scan, shape ncol x nwav x nrow, reverse row,
 			# slice to Gowanus dims, transpose to nwav, nrow, ncol
-            data = np.memmap(os.path.join(fpath,i), np.uint16, mode='r').reshape(
-            sh[2], sh[0], sh[1])[:,:,::-1][gow_col[0]:gow_col[1],:,gow_row[0]:gow_row[1]].transpose(1,2,0)
+			data = np.memmap(os.path.join(fpath, i), np.uint16, mode='r').reshape(sh[2], sh[0], sh[1])[
+			                 :, :, ::-1][gow_col[0]:gow_col[1], :, gow_row[0]:gow_row[1]].transpose(1, 2, 0)
 
+            # get 2-d mask of Gowanus sources on during window
+            # ORIGINAL 2D: gow=
+            # LABELS*np.in1d(LABELS,t_idx).reshape(LABELS.shape)
+
+			mask3d = np.empty(data.shape)
+			mask3d[:,:,:] = LABELS*np.in1d(LABELS,t_idx).reshape(LABELS.shape)[np.newaxis, :, :]
+
+			data = data*mask3d
+
+			HSI_list.append(data)
+
+
+	print('Stacking...')
+	stack = reduce(np.add, HSI_list)
+
+	stack.transpose(2, 0, 1)[..., ::-1].flatten().tofile(opath)
 
 
