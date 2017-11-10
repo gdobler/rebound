@@ -9,6 +9,7 @@ import pandas as pd
 import plotting
 import bb_settings
 import datetime
+from dateutil import tz
 import scipy.misc as spm
 
 def rg8_to_rgb(img):
@@ -179,6 +180,15 @@ def get_timestamp(nights):
 
     return night_dict
 
+
+def convert_tstamp(tstamps):
+    '''
+    Reads in array of naive Unix timestamps and returns array of datetime objects localized to New York time.
+    '''
+    # function to set local time
+    set_tz = np.vectorize(lambda x: datetime.datetime.utcfromtimestamp(x).replace(tzinfo=tz.gettz('America/New York')))
+
+    return set_tz(tstamps)
 
 def clip_labels(cliptype='hsi', light_class='all', lower_thresh=20, upper_sig=2):
 
