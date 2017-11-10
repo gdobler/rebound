@@ -14,7 +14,7 @@ from scipy.ndimage.filters import gaussian_filter as gf
 from scipy.ndimage import measurements as mm
 
 
-# global variables
+# global variables as imported from bb_settings
 # DATA_FILEPATH = os.path.join(os.environ['REBOUND_DATA'], 'bb', '2017')
 # IMG_SHAPE = (3072, 4096)  # dimensions of BK raw images
 # MASK = np.load(os.path.join(os.environ['REBOUND_WRITE'], 'final', 'mask.npy'))
