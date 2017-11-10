@@ -12,19 +12,32 @@ from dateutil import tz
 from scipy.ndimage.filters import gaussian_filter as gf
 from scipy.ndimage import correlate1d
 
-# global variables
-# location of BK bband images
-DATA_FILEPATH = os.path.join(os.environ['REBOUND_WRITE'], 'lightcurves') # location of lightcurves
-# IMG_SHAPE = (3072, 4096)  # dimensions of BK raw images
-
+# global variables as imported from bb_settings
+# CURVES_FILEPATH = os.path.join(os.environ['REBOUND_WRITE'], 'lightcurves') # location of lightcurves
 
 def edge(curve, csv_file = False, output_dir=None):
     """
     Detect the on/off transitions for lightcurves and write to a file.
 
-    Takes as input name of the lightcurve file as located in globally defined DATA_FILEPATH
+    Parameters:
+    ----------
+    curve : str
+        Filename of array of a specific night's lightcurves (nobs x nsources)
 
-    Returns Numpy array with 
+    output_dir : str (default None)
+        Filepath to save on/off indices too; returns object if None
+
+    Returns:
+    --------
+    Object with attributes:
+        .lcs = 2-d array of lightcurves (nobs x nsources)
+        .gd = 2-d array of lightcurves after convolving with Gaussian filter (nobs x nsources)
+        .ons = 2-d array of indices of changes to "on" state (nobs x nsources)
+        .offs = 2-d array of indices of changes to "off" state (nobs x nsources)
+        .tstamps = vector indices of naive Unix timestamp (int)
+
+    If output_dir is set, these data structures will be saves as an 5-tuple in this order:
+    lcs, gd, ons, offs, tstamps
     """
     start = time.time()
     # -- utilities
@@ -36,14 +49,8 @@ def edge(curve, csv_file = False, output_dir=None):
     month,night  = curve.split('_')[-2],curve.split('_')[-1].split('.')[0]
     
     # -- read in lightcurves
-    if csv_file:
-        df = pd.read_csv(os.path.join(bb_settings.CURVES_FILEPATH,curve))
-        tstamp = df[df.columns[0]].apply(lambda x: pd.to_datetime(x, unit='s',utc=True).astimezone(tz.gettz('America/New_York')))
-        del df[df.columns[0]]
-        lcs = df.values
-
-    else:
-        lcs = np.load(os.path.join(bb_settings.CURVES_FILEPATH,curve))
+    with open(os.path.join(bb_settings.CURVES_FILEPATH, curve), 'rb') as file:
+        lcs, tstamps = pickle.load(file)
 
     # -- generate a mask
     print("generating mask for {} {}...".format(month,night))
@@ -118,10 +125,6 @@ def edge(curve, csv_file = False, output_dir=None):
     pad       = np.zeros((lcs.shape), dtype=bool)
     good_ons  = (pad + tags_on) & good_arr
     good_offs = (pad + tags_off) & good_arr
-    
-    # -- split nights
-    # ons = lcs * good_ons
-    # offs = lcs * good_offs
 
     if output_dir is None:
         class output():
@@ -131,31 +134,31 @@ def edge(curve, csv_file = False, output_dir=None):
                 self.gd = lcs_gd
                 self.ons = good_ons
                 self.offs = good_offs
-                self.tstamp = tstamp
+                self.tstamps = tstamps
 
-        return output(lcs, lcs_gd, good_ons, good_offs, tstamp)
+        return output(lcs, lcs_gd, good_ons, good_offs, tstamps)
 
     else:
         with open(os.path.join(output_dir, 'edge_obj_{}_{}.pkl'.format(month, night)), 'wb') as o:
-            edge_obj = lcs, lcs_gd, good_ons, good_offs, tstamp
+            edge_obj = lcs, lcs_gd, good_ons, good_offs, tstamps
             pickle.dump(edge_obj, o, pickle.HIGHEST_PROTOCOL)
 
     end = time.time()
     print "Total runtime: {}".format(end - start)
 
 
-def multi_nights(output_dir, csv_file=False, all_nights=False, nights=None):
+def multi_nights(output_dir, all_nights=False, nights=None):
     """
-    Nights input is str or list of strs, formated as: "06_25"  etc
+    Nights input is str or list of strs, formated as: "07_01"  etc
     """
 
     start_all = time.time()
     if all_nights:
         for lc in os.listdir(bb_settings.CURVES_FILEPATH):
-            edge(curve=lc,csv_file=csv_file, output_dir=output_dir)
+            edge(curve=lc, output_dir=output_dir)
 
     else:
         for n in nights:
-            edge(curve='lightcurves_{}.csv'.format(n),output_dir=output_dir)
+            edge(curve='lightcurves_and_tstamps_tuple_{}.pkl'.format(n),output_dir=output_dir)
             
     print "Total runtime for all nights: {}".format(time.time() - start_all)
