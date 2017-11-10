@@ -77,9 +77,10 @@ def on_state(ons, offs, tstamp=None):
 	for i in range(ons.shape[0]):
 
 		# turn state on if "on" index true (or keep on if previously on)
-		state = ons[i, :] | state
+		# note that in reverse the "off" index is the "on"
+		state = offs[i, :] | state
 
-		state = (state & ~offs[i, :])  # turn state off if "off" index true
+		state = (state & ~ons[i, :])  # turn state off if "off" index true
 
 		# set light state at each timestep, but ignore if previous True
 		lights_on[i, :] = lights_on[i, :] | state
