@@ -46,7 +46,6 @@ gow_col = (1400, 2200)
 LABELS = np.load(os.path.join(os.environ['REBOUND_WRITE'], 'final', 'hsi_pixels3.npy'))[
                  gow_row[0]:gow_row[1], gow_col[0]:gow_col[1]]
 
-
 def on_state(ons, offs, tstamp=None):
 	'''
 	Takes on and off indices (num obs x num sources) and returns a 2-d array
@@ -141,7 +140,7 @@ def multi_night(input_dir, output_dir):
 
 	all_tstamps = np.concatenate(all_tstamps)
 
-	with open(os.path.join(output_dir, 'light_states_all_time.pkl'), 'wb') as file:
+	with open(os.path.join(output_dir, 'light_states_tstamps_tuple.pkl'), 'wb') as file:
 		l = light_states, all_tstamps
 		pickle.dump(l, file, pickle.HIGHEST_PROTOCOL)
 
@@ -149,31 +148,12 @@ def multi_night(input_dir, output_dir):
 	return
 
 
-def load_states(state_path):
-	'''
-	Loads pickle object of states, returns 2-d array of states and 1-d array of
-	timestamps in np.datetime64. Converts dates to datetime objects
-	'''
-	print('Reading in broadband timestamps and making tz aware...')
-	with open(state_path, 'rb') as i:
-		states, tstamps = pickle.load(i)
-
-	tstamps = tstamps.astype('M8[s]').astype('O')
-
-	new_tz = np.vectorize(lambda x: x.replace(
-	    tzinfo=tz.gettz('America/New York')))
-
-	aware = new_tz(tstamps)
-
-	return states, aware
-
-
 def precision_stack(input_dir, month, night, spath, opath, window=5):
 	'''
 	Input_dir : path to HSI raw files
 	spath : path to pickle object of broadband state array and timestamps
 	opath : path to save stacked scans
-	window : temporal window within which to stack
+	window : temporal window within which to stack (in minutes)
 
 	'''
 	# --> utilities
@@ -181,12 +161,10 @@ def precision_stack(input_dir, month, night, spath, opath, window=5):
 
 	fpath = os.path.join(input_dir, month, night)
 
-	states, bb_tstamp = load_states(spath)
+	with open(spath, 'rb') as i:
+		states, bb_tstamp = pickle.load(i)
 
 	sh = (848, 1600, 3194)
-
-	# index of set of labels in Gowanus source array (except 0)
-	g_idx = np.unique(LABELS)[1:]
 
 	HSI_list = []
 
@@ -196,12 +174,12 @@ def precision_stack(input_dir, month, night, spath, opath, window=5):
 
 			print('Reading in {}...'.format(i))
 			start_raw = time.time()
-			# read in timestamp and define window
-			hsi_tstamp = datetime.datetime.fromtimestamp(
-			    os.path.getmtime(os.path.join(fpath,i)), tz=tz.gettz('America/New_York'))
 
-			min_bound = hsi_tstamp - datetime.timedelta(minutes=window)
-			max_bound = hsi_tstamp + datetime.timedelta(minutes=window)
+			# read in timestamp and define window
+			hsi_tstamp = int(os.path.getmtime(os.path.join(fpath,i)))
+
+			min_bound = hsi_tstamp - window * 60
+			max_bound = hsi_tstamp + window * 60
 
 			# indices of states index that are in window
 			window_idx = np.where((bb_tstamp < max_bound) & (bb_tstamp > min_bound))[0]
