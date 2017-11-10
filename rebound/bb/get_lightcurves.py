@@ -79,7 +79,7 @@ def get_curves(month, night, output_dir, file_start=100, file_stop=2700, step=1,
     for i in sorted(os.listdir(os.path.join(bb_settings.DATA_FILEPATH, month, night)))[file_start:file_stop:step]:
         tstep.append(int(os.path.getmtime(os.path.join(bb_settings.DATA_FILEPATH, month, night, i))))
 
-        img_cube[nidx, :, :] = (np.fromfile(os.path.join(bb_settings.DATA_FILEPATH, month, night, i), dtype=np.uint8)).reshape(
+        img_cube[nidx, :, :] = (np.memmap(os.path.join(bb_settings.DATA_FILEPATH, month, night, i), mode ='r', dtype=np.uint8)).reshape(
             bb_settings.IMG_SHAPE[0], bb_settings.IMG_SHAPE[1]).astype(np.float32)
 
         nidx += 1
