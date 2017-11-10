@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-import pandas as pd
 import os
 import time
+import cPickle as pickle
 import matplotlib.pyplot as plt
 import srcex
 import bb_settings
@@ -22,10 +22,46 @@ from scipy.ndimage import measurements as mm
 #     os.environ['REBOUND_WRITE'], 'final', 'labels.npy'))
 
 
-def get_curves(month, night, output_dir, file_start=100, file_stop=2700, step=6, create_ts_cube=False):
+def get_curves(month, night, output_dir, file_start=100, file_stop=2700, step=1, create_ts_cube=False):
     '''    
     Averages the luminosity among pixels of each light source
     to produce lightcurve for each source.
+
+    Parameters:
+    -----------
+    month : str 
+        Month directory of selected night
+
+    night : str
+        Night directory of selected broadband images
+
+    output_dir : str
+        Filepath for saving lightcurves
+        If output_dir = None, method will return an object with unique labels, size of labels, lightcurves
+            and cube of lightcurves within image coordinates, if create_ts_cube is True
+
+    file_start : int (default 100)
+        Start index for reading in images (to truncate daylight)
+
+    file_stop : int (default 2700)
+        Stop index for reading in images (to truncate daylight)
+
+    step : int (default 1)
+        Interval for reading in images -- should be 1 when producing lightcurves
+
+    create_ts_cube : bool (default False)
+        When True, the method will broadcast the 2-d array of lightcurves into a datacube that has the light
+        source coordinates in the original image (nobs x nrows x ncols)
+
+    Returns:
+    --------
+    If output_dir is None:
+        Retuns an object with unique source labels, size of labels, lightcurves and
+            if create_ts_cube True, the lightcurves broadcast into image coordinates
+
+    Otherwise saves 2-tuple of data in output directory:
+        1. data as 2-d array of nobs x nsources (or nobs x nrows x ncols if create_ts_cube True) 
+        2. timestamps (integers of naive Unix timestamp)
     '''
     start = time.time()
 
@@ -61,7 +97,7 @@ def get_curves(month, night, output_dir, file_start=100, file_stop=2700, step=6,
 
 
     # stack sequence of time series into 2-d array time period x light source (index = unix timestamp of raw file)
-    ts_array = pd.DataFrame(np.stack(source_ts), index=tstep)
+    ts_array = np.stack(source_ts)
 
     time_ts_array = time.time()
     print "Time to create {}_{} time series array: {}".format(month, night, time_ts_array - start)
@@ -88,13 +124,16 @@ def get_curves(month, night, output_dir, file_start=100, file_stop=2700, step=6,
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-        # save curves to text file on disk
-        ts_array.to_csv(os.path.join(
-            output_dir, 'lightcurves_{}_{}.csv'.format(month, night)))
+        # create tuple (data, timestep) and save to disk
+        with open(os.path.join(output_dir, 'lightcurves_and_tstamps_tuple_{}_{}.pkl'.format(month, night),'wb')) as file:
+            mytuple = ts_array, np.array(tstep)
+            pickle.dump(mytuple, file, pickle.HIGHEST_PROTOCOL)
 
         # curves_cube
         if create_ts_cube:
-            np.save(os.path.join(output_dir, 'lightcurves_cube.npy'), ts_cube)
+            with open(os.path.join(output_dir, 'lightcurves_w_imgcoords_and_tstamps_tuple_{}_{}.pkl'.format(month, night),'wb')) as file:
+                mytuple = ts_cube, np.array(tstep)
+                pickle.dump(mytuple, file, pickle.HIGHEST_PROTOCOL)
 
         end = time.time()
         print "Time to save files to output: {}".format(end-time_output)
@@ -126,7 +165,7 @@ def multi_nights(output_dir, step=1, all_nights=False, nights=None):
                            output_dir=output_dir, step=step)
 
     else:
-        if nights is None: # not include 7/24 and 7/31
+        if nights is None: # not include 7/24 and 7/31 due to camera data corruption
             nights = [('06', '25'), ('06', '26'), ('06', '27'), ('06', '28'), 
             ('06', '29'), ('06', '30'), ('07', '01'), ('07', '02'), ('07', '03'), 
             ('07', '04'), ('07', '05'), ('07', '06'), ('07', '07'), ('07', '08'), 
