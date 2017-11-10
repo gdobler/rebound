@@ -125,13 +125,13 @@ def get_curves(month, night, output_dir, file_start=100, file_stop=2700, step=1,
             os.makedirs(output_dir)
 
         # create tuple (data, timestep) and save to disk
-        with open(os.path.join(output_dir, 'lightcurves_and_tstamps_tuple_{}_{}.pkl'.format(month, night),'wb')) as file:
+        with open(os.path.join(output_dir, 'lightcurves_and_tstamps_tuple_{}_{}.pkl'.format(month, night)),'wb') as file:
             mytuple = ts_array, np.array(tstep)
             pickle.dump(mytuple, file, pickle.HIGHEST_PROTOCOL)
 
         # curves_cube
         if create_ts_cube:
-            with open(os.path.join(output_dir, 'lightcurves_w_imgcoords_and_tstamps_tuple_{}_{}.pkl'.format(month, night),'wb')) as file:
+            with open(os.path.join(output_dir, 'lightcurves_w_imgcoords_and_tstamps_tuple_{}_{}.pkl'.format(month, night)),'wb') as file:
                 mytuple = ts_cube, np.array(tstep)
                 pickle.dump(mytuple, file, pickle.HIGHEST_PROTOCOL)
 
