@@ -125,7 +125,7 @@ def plot_curves(curves_obj, clim=None, oname=None):
 
     return
 
-def four_ts(ts1, ts2, ts3, ts4, clim=None, oname=None):
+def four_ts(ts1, ts2, ts3, ts4, src, lim=None, oname=None):
     """
     Plots time series (i.e. lightcurve signal, on/off detection, etc)
     """
@@ -134,15 +134,18 @@ def four_ts(ts1, ts2, ts3, ts4, clim=None, oname=None):
     fig, ax = plt.subplots(4, 1, figsize=(15, 10))
     ax1,ax2,ax3,ax4 = ax
 
+    ax1.set_title('Light source: {}'.format(src))
+
     # -- plot
-    ax1.plot(ts1)
+    ax1.plot(ts1[:,src])
 
-    ax2.plot(ts2)
+    ax2.plot(ts2[:,src])
 
-    ax3.plot(ts3)
+    ax3.plot(ts3[:,src])
 
-    ax4.plot(ts4)
+    ax4.plot(ts4[:,src])
 
+    
     fig.canvas.draw()
 
     plt.show()

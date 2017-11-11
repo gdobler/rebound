@@ -12,7 +12,7 @@ from scipy.ndimage import correlate1d
 # global variables as imported from bb_settings
 # CURVES_FILEPATH = os.path.join(os.environ['REBOUND_WRITE'], 'lightcurves') # location of lightcurves
 
-def edge(curve, w=30, s_peaks = 0.0, s_clip_amp = 2.0, output_dir=None):
+def edge(curve, w=30, s_peaks = 0.0, s_clip_amp = 2.0, s_xcheck = 2.0, output_dir=None):
     """
     Detect the on/off transitions for lightcurves and write to a file.
 
@@ -42,7 +42,7 @@ def edge(curve, w=30, s_peaks = 0.0, s_clip_amp = 2.0, output_dir=None):
     delta        = 2
     sig_clip_amp = s_clip_amp
     sig_peaks    = s_peaks
-    sig_xcheck   = 2.0
+    sig_xcheck   = s_xcheck
     month,night  = curve.split('_')[-2],curve.split('_')[-1].split('.')[0]
     
     # -- read in lightcurves
