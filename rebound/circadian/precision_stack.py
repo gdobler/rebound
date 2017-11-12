@@ -16,7 +16,9 @@ gow_col = (1400, 2200)
 LABELS = np.load(os.path.join(os.environ['REBOUND_WRITE'], 'final', 'hsi_pixels3.npy'))[
     gow_row[0]:gow_row[1], gow_col[0]:gow_col[1]]
 NUM_SOURCES = 6870
-
+NIGHTS = [('07','29'),('07','30'),('08','01'),('08','02'),('08','03'),('08','04'),('08','05'),
+          ('08','06'),('08','07'),('08','08'),('08','09'),('08','10'),('08','11'),('08','12'),
+          ('08','13'),('08','14'),('08','15'),('08','16'),('08','17'),('08','18'),('08','19')]
 
 def on_state(ons, offs, tstamp=None):
     '''
@@ -174,8 +176,9 @@ def precision_stack(input_dir, month, night, states, bb_tstamps, opath, window=5
                 data = np.memmap(fpath, np.uint16, mode='r')
 
                 data = data.copy().reshape(sh[2], sh[0], sh[1])[
-		   		:, :, ::-1][gow_col[0]:gow_col[1], :, gow_row[0]:gow_row[1]].transpose(1, 2, 0)
+		   		:, :, ::-1][gow_col[0]:gow_col[1],:,gow_row[0]:gow_row[1]].transpose(1, 2, 0)
 
+                print"Data shape is: {}".format(data.shape)
                 t3 = time.time()
                 print "Time to read and reshape HSI scan:", t3-t2
                 print("Creating mask...")
@@ -195,18 +198,41 @@ def precision_stack(input_dir, month, night, states, bb_tstamps, opath, window=5
                 t5 = time.time()
                 print 'Time to mask data:', t5 - t4
 
-                HSI_list.append(data*1.0)
+                HSI_list.append(data.astype(np.float32))
                 print 'Time for {}:{}'.format(i, time.time()-t1)
 
-    t6 = time.time()
     print 'Stacking...'
     stack = reduce(np.add, HSI_list)
 
-    t7 = time.time()
-    print "time to stack:", t7-t6
+    print "Total runtime {}".format(time.time() - t0)
+
+    return stack
+
+def multi_stack(input_dir, spath, opath, night_list=NIGHTS, window=5):
+    '''
+    Runs precision stack method through list of months and nights.
+    '''
+    t0 = time.time()
+    # load array of light states and timestamps
+    print "Loading on states array and timestamps..."
+    states, bb_ts = load_states(spath)
+
+    all_hsi_list = []
+
+    for n in night_list:
+        t1 = time.time()
+        print "Precision stacking for {}/{}".format(n[0],n[1])
+
+        all_hsi_list.append(precision_stack(input_dir=input_dir, month = n[0], night = n[1], 
+            states = states, bb_tstamps = bb_ts, opath=opath, window=window))
+        print "Time for {}/{}: {}".format(n[0],n[1],time.time()-t1)
+
+    t2 = time.time()
+
+    print "Stacking all nights..."
+    all_stack = reduce(np.add, all_hsi_list)
+    print "Time to stack : {}".format(time.time() - t2)
 
     stack.transpose(2, 0, 1)[..., ::-1].flatten().tofile(opath)
-    print "time to transpose", time.time()-t7
-    print 'Total runtime {}'.format(time.time()-t0)
-    
+
     return
