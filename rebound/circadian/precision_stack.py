@@ -45,6 +45,8 @@ gow_row = (900, 1200)
 gow_col = (1400, 2200)
 LABELS = np.load(os.path.join(os.environ['REBOUND_WRITE'], 'final', 'hsi_pixels3.npy'))[
                  gow_row[0]:gow_row[1], gow_col[0]:gow_col[1]]
+NUM_SOURCES = 6870
+
 
 def on_state(ons, offs, tstamp=None):
 	'''
@@ -112,12 +114,12 @@ def multi_night(input_dir, output_dir):
 	start = time.time()
 
 	# utilities
-	num_sources = 6870
+
 	num_nights = len([f for f in os.listdir(input_dir)])
 	all_tstamps = []
 
 	# initialize  empty array
-	light_states = np.empty((num_nights*2600, num_sources), dtype=bool)
+	light_states = np.empty((num_nights*2600, NUM_SOURCES), dtype=bool)
 
 	idx = 0
 
@@ -157,7 +159,7 @@ def precision_stack(input_dir, month, night, spath, opath, window=5):
 
 	'''
 	# --> utilities
-	start = time.time()
+	t0 = time.time()
 
 	fpath = os.path.join(input_dir, month, night)
 
@@ -168,12 +170,14 @@ def precision_stack(input_dir, month, night, spath, opath, window=5):
 
 	HSI_list = []
 
+	print('Time to load on-state pickle object:',time.time()-t0)
+
 	# read in HSI
 	for i in os.listdir(fpath):
 		if i.split('.')[-1] == 'raw':
 
 			print('Reading in {}...'.format(i))
-			start_raw = time.time()
+			t1 = time.time()
 
 			# read in timestamp and define window
 			hsi_tstamp = int(os.path.getmtime(os.path.join(fpath,i)))
@@ -181,37 +185,58 @@ def precision_stack(input_dir, month, night, spath, opath, window=5):
 			min_bound = hsi_tstamp - window * 60
 			max_bound = hsi_tstamp + window * 60
 
-			# indices of states index that are in window
-			window_idx = np.where((bb_tstamp < max_bound) & (bb_tstamp > min_bound))[0]
+			t2 = time.time()
+			print("time to read in tstamp:",t2-t1)			
 
-			# slice by time
-			states_win = states[window_idx, :]
+			# indices of states index that are in window
+			states_win = states[(bb_tstamp < max_bound) & (bb_tstamp > min_bound), :]
+
+			t4 = time.time()
 
 			# if any light source is on during window, evaluate to True and
 			# list indices thare are the source labels in the broadband mask
-			t_idx = np.where(np.any(states_win, axis=0))[0]
+
+			t_idx = np.any(states_win, axis=0)
+			t5 = time.time()
+			print('time to find index of tstamps in state array:',t5 - t4)
 
 			# reads in scan, shape ncol x nwav x nrow, reverse row,
 			# slice to Gowanus dims, transpose to nwav, nrow, ncol
-			data = np.memmap(os.path.join(fpath, i), np.uint16, mode='r').reshape(sh[2], sh[0], sh[1])[
+			data = np.memmap(os.path.join(fpath, i), np.uint16, mode='r')
+
+			data = data.copy().reshape(sh[2], sh[0], sh[1])[
 			                 :, :, ::-1][gow_col[0]:gow_col[1], :, gow_row[0]:gow_row[1]].transpose(1, 2, 0)
 
+
+			t6 = time.time()
+			print('time read in HSI scan:',t6 - t5)
+            
             # get 2-d mask of Gowanus sources on during window
             # ORIGINAL 2D: gow=
             # LABELS*np.in1d(LABELS,t_idx).reshape(LABELS.shape)
 
 			mask3d = np.empty(data.shape)
-			mask3d[:,:,:] = LABELS*np.in1d(LABELS,t_idx).reshape(LABELS.shape)[np.newaxis, :, :]
+			mask3d[:,:,:] = np.in1d(LABELS,np.arange(NUM_SOURCES)[t_idx]).reshape(LABELS.shape)[np.newaxis, :, :]
 
-			data = data*mask3d
+			t7 = time.time()
+			print('time to create 3d mask:',t7 - t6)
 
-			HSI_list.append(data)
-			print('Time for {}:{}'.format(i, time.time()-start_raw))
+			data[~mask3d] = 0
 
+			t8 = time.time()
+			print('time to mask data:',t8 - t7)
+
+			HSI_list.append(data*1.0)
+			print('Time for {}:{}'.format(i, time.time()-t1))
+
+	t9 = time.time()
 	print('Stacking...')
 	stack = reduce(np.add, HSI_list)
 
+	t10 = time.time()
+	print("time to stack:",t10-t9)
 
 	stack.transpose(2, 0, 1)[..., ::-1].flatten().tofile(opath)
-	print('Total runtime {}'.format(time.time()-start))
+	print("time to transpose",time.time()-t10)
+	print('Total runtime {}'.format(time.time()-t0))
 
