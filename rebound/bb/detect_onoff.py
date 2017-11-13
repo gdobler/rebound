@@ -5,12 +5,11 @@ import os
 import time
 import numpy as np
 import cPickle as pickle
-import bb_settings
 from scipy.ndimage.filters import gaussian_filter as gf
 from scipy.ndimage import correlate1d
 
-# global variables as imported from bb_settings
-# CURVES_FILEPATH = os.path.join(os.environ['REBOUND_WRITE'], 'lightcurves') # location of lightcurves
+# global variables
+DATA_IN = os.path.join(os.environ['REBOUND_WRITE'], 'lightcurves') # location of lightcurves
 
 def edge(curve, w=30, s_peaks = 0.0, s_clip_amp = 2.0, s_xcheck = 2.0, output_dir=None):
     """
@@ -46,7 +45,7 @@ def edge(curve, w=30, s_peaks = 0.0, s_clip_amp = 2.0, s_xcheck = 2.0, output_di
     month,night  = curve.split('_')[-2],curve.split('_')[-1].split('.')[0]
     
     # -- read in lightcurves
-    with open(os.path.join(bb_settings.CURVES_FILEPATH, curve), 'rb') as file:
+    with open(os.path.join(DATA_IN, curve), 'rb') as file:
         lcs, tstamps = pickle.load(file)
 
     # -- generate a mask
@@ -151,7 +150,7 @@ def multi_nights(output_dir, all_nights=False, nights=None):
 
     start_all = time.time()
     if all_nights:
-        for lc in os.listdir(bb_settings.CURVES_FILEPATH):
+        for lc in os.listdir(DATA_IN):
             edge(curve=lc, output_dir=output_dir)
 
     else:

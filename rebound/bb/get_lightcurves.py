@@ -22,7 +22,7 @@ from scipy.ndimage import measurements as mm
 #     os.environ['REBOUND_WRITE'], 'final', 'labels.npy'))
 
 
-def get_curves(month, night, output_dir, file_start=100, file_stop=2700, step=1, create_ts_cube=False):
+def get_curves(month, night, output_dir, file_start=0, file_stop=2700, step=1, create_ts_cube=False):
     '''    
     Averages the luminosity among pixels of each light source
     to produce lightcurve for each source.
@@ -63,7 +63,7 @@ def get_curves(month, night, output_dir, file_start=100, file_stop=2700, step=1,
         1. data as 2-d array of nobs x nsources (or nobs x nrows x ncols if create_ts_cube True) 
         2. timestamps (integers of naive Unix timestamp)
     '''
-    start = time.time()
+    t0 = time.time()
 
     # utilities
     lnight = len(np.arange(file_start, file_stop, step))
@@ -73,19 +73,24 @@ def get_curves(month, night, output_dir, file_start=100, file_stop=2700, step=1,
     nidx = 0
     tstep = []
 
+    t1 = time.time()
     print "Loading night files for {}_{}...".format(month, night)
 
     # load raw images
     for i in sorted(os.listdir(os.path.join(bb_settings.DATA_FILEPATH, month, night)))[file_start:file_stop:step]:
         tstep.append(int(os.path.getmtime(os.path.join(bb_settings.DATA_FILEPATH, month, night, i))))
 
-        img_cube[nidx, :, :] = (np.memmap(os.path.join(bb_settings.DATA_FILEPATH, month, night, i), mode ='r', dtype=np.uint8)).reshape(
-            bb_settings.IMG_SHAPE[0], bb_settings.IMG_SHAPE[1]).astype(np.float32)
+
+        data = np.memmap(os.path.join(bb_settings.DATA_FILEPATH, month, night, i), dtype = np.uint8, mode = 'r')
+
+        img_cube[nidx, :, :] = data.reshape(bb_settings.IMG_SHAPE[0], bb_settings.IMG_SHAPE[1]).astype(np.float32)
 
         nidx += 1
 
     unique, size = np.unique(bb_settings.LABELS_MASK, return_counts=True)
 
+    t2 = time.time()
+    print "Time to load and reshape {}_{}: {}".format(month, night, t2 - t1)
     print "Creating time series array for {}_{}...".format(month, night)
     source_ts = []
 
@@ -99,8 +104,8 @@ def get_curves(month, night, output_dir, file_start=100, file_stop=2700, step=1,
     # stack sequence of time series into 2-d array time period x light source (index = unix timestamp of raw file)
     ts_array = np.stack(source_ts)
 
-    time_ts_array = time.time()
-    print "Time to create {}_{} time series array: {}".format(month, night, time_ts_array - start)
+    t3= time.time()
+    print "Time to create {}_{} time series array: {}".format(month, night, t3 - t2)
 
     # broadcast timeseries of light sources into original image array
     if create_ts_cube:
@@ -114,13 +119,10 @@ def get_curves(month, night, output_dir, file_start=100, file_stop=2700, step=1,
 
         ts_cube = ts_cube.astype(np.float32)
 
-        time_create_cube = time.time()
-        print "Time to create time series cube: {}".format(time_create_cube - time_ts_array)
+        t4 = time.time()
+        print "Time to create time series cube: {}".format(t4 - t3)
 
     if output_dir != None:
-        time_output = time.time()
-        print "Saving files to output..."
-
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
@@ -135,9 +137,8 @@ def get_curves(month, night, output_dir, file_start=100, file_stop=2700, step=1,
                 mytuple = ts_cube, np.array(tstep)
                 pickle.dump(mytuple, file, pickle.HIGHEST_PROTOCOL)
 
-        end = time.time()
-        print "Time to save files to output: {}".format(end-time_output)
-        print "Total runtime: {}".format(end - start)
+        t5 = time.time()
+        print "Total runtime: {}".format(t5 - t0)
 
     else:
         class output():
@@ -150,8 +151,8 @@ def get_curves(month, night, output_dir, file_start=100, file_stop=2700, step=1,
                 if create_ts_cube:
                     self.curves_cube = ts_cube
 
-        end = time.time()
-        print "Total runtime: {}".format(end - start)
+        t6 = time.time()
+        print "Total runtime: {}".format(t6 - t0)
         return output()
 
 
