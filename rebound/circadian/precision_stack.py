@@ -146,7 +146,7 @@ def precision_stack(input_dir, month, night, states, bb_tstamps, opath, window=5
     HSI_list = []
 
     # read in HSI
-    for i in sorted(os.listdir(dir_path)):
+    for i in sorted(os.listdir(dir_path))[::5]:
         if i.split('.')[-1] == 'raw':
             fpath = os.path.join(dir_path, i)
             print('Reading in HSI {}...'.format(i))
@@ -233,6 +233,6 @@ def multi_stack(input_dir, spath, opath, night_list=NIGHTS, window=5):
     all_stack = reduce(np.add, all_hsi_list)
     print "Time to stack : {}".format(time.time() - t2)
 
-    stack.transpose(2, 0, 1)[..., ::-1].flatten().tofile(opath)
+    all_stack.transpose(2, 0, 1)[..., ::-1].flatten().tofile(opath)
 
     return
