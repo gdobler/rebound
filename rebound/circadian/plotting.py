@@ -41,20 +41,20 @@ def simple_plot(img, wav, setlim=[0,1000], asp=0.45):
 	return
 
 
-def hyper_viz(cube, asp=0.45):
+def hyper_viz(data, asp=0.45):
     """
     Visualize a hyperspectral scan. Lower plot shows mean light intensity across all wavelengths
     for full scan. Upper plot shows light intensity by wavelength for pixel hovered over.
     
     Args:
-        cube      : data cube of stacked HSI scans (should be nwavs by nrows by ncols)
+        data      : data cube of stacked HSI scans (should be nwavs by nrows by ncols)
         			Cube should be sufficiently cleaned (i.e. data - numpy.median())
         asp       :
 
     
     """
 
-    imgL = cube.mean(0) # mean intensity across all wavelengths
+    imgL = data.mean(0) # mean intensity across all wavelengths
 
 
     def update_spec(event):
@@ -62,8 +62,8 @@ def hyper_viz(cube, asp=0.45):
             rind = int(event.ydata)
             cind = int(event.xdata)
 
-            tspec = cube[:, rind, cind]
-            linsp.set_data(np.arange(0,cube.shape[0]), cube[:, rind, cind])
+            tspec = data[:, rind, cind]
+            linsp.set_data(np.arange(0,data.shape[0]), data[:, rind, cind])
             axsp.set_ylim(tspec.min(), tspec.max() * 1.1)
             axsp.set_title("({0},{1})".format(rind, cind))
 
@@ -80,8 +80,8 @@ def hyper_viz(cube, asp=0.45):
     axim.set_title('Stacked HSI scan (mean intensity across wavelength)')
 
     # -- show the spectrum
-    axsp.set_xlim(0, cube.shape[0])
-    linsp, = axsp.plot(np.arange(0,cube.shape[0]) ,cube[:, 0, 0])
+    axsp.set_xlim(0, data.shape[0])
+    linsp, = axsp.plot(np.arange(0,data.shape[0]) ,data[:, 0, 0])
 
     fig.canvas.draw()
     fig.canvas.mpl_connect("motion_notify_event", update_spec)

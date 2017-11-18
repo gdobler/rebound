@@ -16,6 +16,7 @@ gow_col = (1400, 2200)
 LABELS = np.load(os.path.join(os.environ['REBOUND_WRITE'], 'final', 'hsi_pixels3.npy'))[
     gow_row[0]:gow_row[1], gow_col[0]:gow_col[1]]
 NUM_SOURCES = 6870
+NUM_OBS = 2700
 NIGHTS = [('07','29'),('07','30'),('08','01'),('08','02'),('08','03'),('08','04'),('08','05'),
           ('08','06'),('08','07'),('08','08'),('08','09'),('08','10'),('08','11'),('08','12'),
           ('08','13'),('08','14'),('08','15'),('08','16'),('08','17'),('08','18'),('08','19')]
@@ -90,8 +91,9 @@ def multi_night(input_dir, output_dir):
     num_nights = len([f for f in os.listdir(input_dir)])
     all_tstamps = []
 
+
     # initialize  empty array
-    light_states = np.empty((num_nights*2600, NUM_SOURCES), dtype=bool)
+    light_states = np.empty((num_nights*NUM_OBS, NUM_SOURCES), dtype=bool)
 
     idx = 0
 
@@ -107,9 +109,9 @@ def multi_night(input_dir, output_dir):
 
         print('Determining on state for {}'.format(i))
         # run on_state
-        light_states[idx:idx+2600, :] = on_state(ons=edge[2], offs=edge[3])
+        light_states[idx:idx+NUM_OBS, :] = on_state(ons=edge[2], offs=edge[3])
 
-        idx += 2600
+        idx += NUM_OBS
         print('Time for {}: {}'.format(i, time.time() - start_night))
 
     all_tstamps = np.concatenate(all_tstamps)
