@@ -135,7 +135,7 @@ def load_states(spath):
     return states, bb_tstamps
 
 
-def precision_stack(input_dir, month, night, states, bb_tstamps, opath, window=5):
+def precision_stack(input_dir, month, night, states, bb_tstamps, opath, window=5, step=1):
     '''
     Input_dir : path to HSI raw files
     opath : path to save stacked scans
@@ -148,7 +148,7 @@ def precision_stack(input_dir, month, night, states, bb_tstamps, opath, window=5
     HSI_list = []
 
     # read in HSI
-    for i in sorted(os.listdir(dir_path))[::5]:
+    for i in sorted(os.listdir(dir_path))[::step]:
         if i.split('.')[-1] == 'raw':
             fpath = os.path.join(dir_path, i)
             print('Reading in HSI {}...'.format(i))
@@ -210,7 +210,7 @@ def precision_stack(input_dir, month, night, states, bb_tstamps, opath, window=5
 
     return stack
 
-def multi_stack(input_dir, spath, opath, night_list=NIGHTS, window=5):
+def multi_stack(input_dir, spath, opath, night_list=NIGHTS, window=5, step=1):
     '''
     Runs precision stack method through list of months and nights.
     '''
