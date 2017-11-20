@@ -228,7 +228,7 @@ def augment_mask(labels, min_thresh=3):
 
 
 
-def sigma_clipping(input_file, sig=3, iter=10):
+def sigma_clip(input_file, ax, sig_amp=3, iter=10):
     '''
     Takes numpy memmap of an HSI scan and adjusts median by clipping extremes 
     and iterating in order to clear HSi scan.
@@ -246,23 +246,70 @@ def sigma_clipping(input_file, sig=3, iter=10):
         Number of passess before final subtraction.
     '''
     
-    # -- compute the gaussian difference (using a masked array now)
-    lcs_gd = np.ma.zeros(lcs_sm.shape, dtype=lcs_sm.dtype)
-    lcs_gd[delta // 2: -delta // 2] = lcs_sm[delta:] - lcs_sm[:-delta]
-    
-    # -- set the gaussian difference mask
-    lcs_gd.mask = np.zeros_like(msk)
-    lcs_gd.mask[delta // 2: -delta // 2] = ~(msk[delta:] * msk[:-delta])
-    
-    time_clip = time.time()
+    # -- create mask
+    data = np.ma.zeros(input_file.shape, dtype=input_file.dtype)
+    data[:,:,:] = input_file.copy()
 
-    # -- sigma clip and reset the means, standard deviations, and masks
-    print("sigma clipping ...")
-    tmsk = lcs_gd.mask.copy()
-    for _ in range(10):
-        avg             = lcs_gd.mean(0)
-        sig             = lcs_gd.std(0)
-        lcs_gd.mask = np.abs(lcs_gd - avg) > sig_clip_amp * sig
-    final_avg = lcs_gd.mean(0).data
-    final_sig = lcs_gd.std(0).data
-    lcs_gd.mask = tmsk    
+    data.mask = np.zeros_like(input_file)
+
+    temp = data.mask.copy()
+
+    # -- sigma clip along rows and reset the means, standard deviations, and masks
+    for _ in range(iter):
+        avg             = np.mean(data, axis=ax, keepdims=True)
+        sig             = np.std(data, axis=ax, keepdims=True)
+        data.mask = np.abs(data - avg) > sig_amp * sig
+
+
+    return input_file - np.median(data, axis=ax, keepdims=True).data
+
+def mean_spectra(scans, labels, gow=False):
+    '''
+    Takes a file of stacked HSI scans and an array of labels (i.e. broadband mask)
+    and finds the mean spectra for the sources in lables.
+
+    Scan and labels must share nrows and ncols.
+
+    Parameters:
+    -----------
+    scans : raw file
+        Stacked HSI scans data cube (nwav x nrows x ncols)
+
+    labels : numpy array
+        2-d array of pixels of labeled sources (nrows x ncols)
+
+    gow : bool (default False)
+        If True, slices labels to dimensions of Gowanus. Scans must also be same dimension.
+
+    Returns:
+    --------
+    Dictionary with keys as source labels and values are 1-d arrays of spectra for the source
+    (light intensity over 848 wavelength channels).
+    '''
+
+    # utilities
+    gow_row = (900, 1200)
+    gow_col = (1400, 2200)
+
+    if gow:
+        labels = labels[gow_row[0]:gow_row[1], gow_col[0]:gow_col[1]]
+
+    idx = np.unique(labels)[1:] # array of labels without 0
+
+    src_spectra = []
+
+    for i in range(scans.shape[0]):
+        scan_mu = nd.measurements.mean(scans[i, :, :], labels, idx)
+        scan_mu = scan_mu.reshape(scan_mu.shape[0], 1)
+        src_spectra.append(acan_mu)
+
+    src_array = np.concatenate(src_spectra, axis = 1)
+
+    s_dict = {}
+    for s in range(idx.shape[0]):
+        s_dict[idx[s]] = src_array[s, :]
+
+    return s_dict
+
+
+
