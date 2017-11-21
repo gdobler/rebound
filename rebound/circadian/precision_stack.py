@@ -230,7 +230,7 @@ def multi_stack(input_dir, spath, opath, night_list=NIGHTS, window=5, step=1):
         print "Time for {}/{}: {}".format(n[0],n[1],time.time()-t1)
 
     t2 = time.time()
-
+    
     print "Stacking all nights..."
     all_stack = reduce(np.add, all_hsi_list)
     print "Time to stack : {}".format(time.time() - t2)

@@ -301,7 +301,7 @@ def mean_spectra(scans, labels, gow=False):
     for i in range(scans.shape[0]):
         scan_mu = nd.measurements.mean(scans[i, :, :], labels, idx)
         scan_mu = scan_mu.reshape(scan_mu.shape[0], 1)
-        src_spectra.append(acan_mu)
+        src_spectra.append(scan_mu)
 
     src_array = np.concatenate(src_spectra, axis = 1)
 
