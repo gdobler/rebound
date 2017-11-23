@@ -6,6 +6,7 @@ import sys
 import shutil
 import numpy as np
 import pandas as pd
+import cPickle as pickle
 import plotting
 import bb_settings
 import datetime
@@ -190,7 +191,12 @@ def convert_tstamp(tstamps):
 
     return set_tz(tstamps)
 
-def clip_labels(cliptype='hsi', light_class='all', lower_thresh=20, upper_sig=2):
+def clip_labels(cliptype='hsi', light_class='all'):
+
+    # utilities
+    lower_thresh = 20
+    sig_amp = 2
+
 
     if cliptype == 'hsi_mask':  # all sources in HSI mask
         hsi_l, hsi_s = np.unique(bb_settings.FINAL_MASK, return_counts=True)
@@ -207,98 +213,142 @@ def clip_labels(cliptype='hsi', light_class='all', lower_thresh=20, upper_sig=2)
             return bb_settings.SPECTRA_CLASS[selector_msk][bb_settings.SPECTRA_CLASS.columns[-4]].values
 
     elif cliptype == 'gowanus':  # sources estimated to be in Gowanus public housing
-        new_hsi = bb_settings.FINAL_MASK[1000:1100, 1610:1900].copy()
+        new_hsi = bb_settings.FINAL_MASK[900:1200, 1400:2200].copy()
         hsi_l, hsi_s = np.unique(new_hsi, return_counts=True)
 
         return hsi_l
 
     elif cliptype == 'manual':  # manually set lower/upper bounds
         # upper thresh
-        thresh = bb_settings.SIZES[1:].mean() + bb_settings.SIZES[1:].std()*upper_sig
+        thresh = bb_settings.SIZES[1:].mean() + bb_settings.SIZES[1:].std()*sig_amp
 
         size_msk = (bb_settings.SIZES < thresh) & (bb_settings.SIZES > lower_thresh)
 
         return bb_settings.LABELS[size_msk]
 
 
-def load_lc(cube=True, clip=None):
+def load_lc(cube=True, clip=None, light_class='all'):
     """
     Loads previously extracted lightcuves. 
     If cube = False, returns a 2-d array time series (num total multi night timesteps x num sources)
     If cube = True, it does so three-dimensionally by night (num nights x timestep/night x num sources)
+
+    If clipping, set "clip" to cliptype and if cliptype='hsi', set 'light_class' (default 'all')
     """
 
     # get
     if cube:
         curves = np.empty((bb_settings.NUM_CURVES, bb_settings.CURVE_LENGTH, len(bb_settings.LABELS[1:])))
+        tstamps = np.empty((bb_settings.NUM_CURVES, bb_settings.CURVE_LENGTH))
 
         nidx = 0
 
         for i in sorted(os.listdir(bb_settings.CURVES_FILEPATH)):
-            curves[nidx, :, :] = (np.load(os.path.join(bb_settings.CURVES_FILEPATH, i)))
+            with open(os.path.join(bb_settings.CURVES_FILEPATH, i), 'rb') as file:
+                lc,ts = pickle.load(file)
+
+            curves[nidx, :, :] = lc
+
+            tstamps[nidx, :] = ts
+
             nidx += 1
 
     else:
         all_curves = []
+        all_ts = []
 
         for i in sorted(os.listdir(bb_settings.CURVES_FILEPATH)):
-            all_curves.append(np.load(os.path.join(bb_settings.CURVES_FILEPATH, i)))
+            with open(os.path.join(bb_settings.CURVES_FILEPATH, i), 'rb') as file:
+                lc,ts = pickle.load(file)
+
+            all_curves.append(lc)
+            all_ts.append(ts)
 
         curves = np.concatenate(all_curves, axis=0)
+        tstamps = np.concatenate(all_ts)
 
     if clip is not None:
+        clip_idx  = clip_labels(cliptype=clip, light_class=light_class)
 
         if cube:
-            return curves[:, :, clip]
+            return curves[:, :, clip_idx], tstamps
         else:
-            return curves[:, clip]
+            return curves[:, clip_idx], tstamps
 
     else:
-        return curves
+        return curves, tstamps
 
 
-def load_onoff(cube=True, clip=None):
+def load_edges(cube=True, clip=None, light_class='all'):
+
+    num_files = bb_settings.NUM_EDGES
 
     if cube:
+        lcs = np.empty((bb_settings.NUM_EDGES, bb_settings.CURVE_LENGTH, len(bb_settings.LABELS[1:])))
+        lcgds = np.empty((bb_settings.NUM_EDGES, bb_settings.CURVE_LENGTH, len(bb_settings.LABELS[1:])))
         ons = np.empty((bb_settings.NUM_EDGES, bb_settings.CURVE_LENGTH, len(bb_settings.LABELS[1:])))
         offs = np.empty((bb_settings.NUM_EDGES, bb_settings.CURVE_LENGTH, len(bb_settings.LABELS[1:])))
+        tstamps = np.empty((bb_settings.NUM_CURVES, bb_settings.CURVE_LENGTH))
 
         nidx = 0
-        fidx = 0
 
         for i in sorted(os.listdir(bb_settings.EDGE_PATH)):
-            if i.split('_')[-1] == 'ons.npy':
-                ons[nidx, :, :] = (np.load(os.path.join(bb_settings.EDGE_PATH, i)))
-                nidx += 1
+            with open(os.path.join(bb_settings.EDGE_PATH, i), 'rb') as file:
+                lc, lcgd, on, off, ts = pickle.load(file)
 
-            elif i.split('_')[-1] == 'offs.npy':
-                offs[fidx, :, :] = (np.load(os.path.join(bb_settings.EDGE_PATH, i)))
-                fidx += 1
+            lcs[nidx, :, :] = lc
+            lcgds[nidx, :, :] = lcgd
+            ons[nidx, :, :] = on
+            offs[nidx, :, :] = off
+            tstamps[nidx, :] = ts
+
+            nidx += 1
+
+            ratio_done = int(nidx*100.0 / num_files)
+            if nidx % 10 == 0:
+                print "{} % of nights loaded...".format(ratio_done)
 
     else:
-        all_ons = []
-        all_offs = []
+        lcs = []
+        lcgds = []
+        ons = []
+        offs = []
+        tstamps = []
+
+        nidx = 0
 
         for i in sorted(os.listdir(bb_settings.EDGE_PATH)):
-            if i.split('_')[-1] == 'ons.npy':
-                all_ons.append(np.load(os.path.join(bb_settings.EDGE_PATH, i)))
+            with opn(os.path.join(bb_settings.EDGE_PATH, i), 'rb') as file:
+                lc, lcgd, on, off, ts = pickle.load(file)
 
-            elif i.split('_')[-1] == 'offs.npy':
-                all_offs.append(np.load(os.path.join(bb_settings.EDGE_PATH, i)))
+            lcs.append(lc)
+            lcgds.append(lcgd)
+            ons.append(on)
+            offs.append(off)
+            tstamps.app(ts)
 
-        ons = np.concatenate(all_ons, axis=0)
+            nidx += 1
 
-        offs = np.concatenate(all_offs, axis=0)
+            ratio_done = int(nidx*100.0 / num_files)
+            if nidx % 10 == 0:
+                print "{} % of nights loaded...".format(ratio_done)
+
+        lcs = np.concatenate(lcs, axis=0)
+        lcgds = np.concatenate(lcgds, axis=0)
+        ons = np.concatenate(ons, axis=0)
+        offs = np.concatenate(offs, axis=0)
+        tstamps = np.concatenate(tstamps)
 
     if clip is not None:
-
-        if cube:
-            return ons[:, :, clip], offs[:, :, clip]
-        else:
-            return ons[:, clip], offs[:, clip]
+        clip_idx  = clip_labels(cliptype=clip, light_class=light_class)
 
     else:
-        return ons, offs
+        clip_idx = np.arange(len(bb_settings.LABELS[1:]))
+
+    if cube:
+        return lcs[:,:, clip_idx], lcgds[:,:, clip_idx], ons[:, :, clip_idx], offs[:, :, clip_idx], tstamps
+    else:
+        return lcs[:, clip_idx], lcgds[:, clip_idx], ons[:, clip_idx], offs[:, clip_idx], tstamps
 
 
 def plot(data=bb_settings.LABELS_MASK, clip=None):

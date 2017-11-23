@@ -179,9 +179,14 @@ def single_ts(ts_array, clim=None, oname=None):
     return
 
 
-def compare_curves(curves, ons, offs, night1, night2, v_min=0.3, off=True):
+def compare_curves(curves, ons, offs, night1, night2, v_min=0.3, off=True, oname=None):
+    '''
+
+    '''
 
     # utils
+    output_dir = os.path.join(os.environ['REBOUND_WRITE'],'plots')
+
     first_night = np.datetime64('2017-06-25')
     if off:
         tag = -1
@@ -214,6 +219,7 @@ def compare_curves(curves, ons, offs, night1, night2, v_min=0.3, off=True):
                      mec='orange', color='orange', ms=2)
     ax1.imshow(tags(night1, night1)[0], cmap='gray',
                interpolation='nearest', vmin=v_min, aspect='auto')
+    ax1.get_xaxis().set_visible(False)
 
     ax2.set_title("{} tags for {}, sorted on {}".format(
         tag_title, first_night+night2, first_night+night2))
@@ -221,6 +227,7 @@ def compare_curves(curves, ons, offs, night1, night2, v_min=0.3, off=True):
                      mec='orange', color='orange', ms=2)
     ax2.imshow(tags(night2, night2)[0], cmap='gray',
                interpolation='nearest', vmin=v_min, aspect='auto')
+    ax2.get_xaxis().set_visible(False)
 
     ax3.set_title("{} tags for {}, sorted on {}".format(
         tag_title, first_night+night2, first_night+night1))
@@ -235,6 +242,7 @@ def compare_curves(curves, ons, offs, night1, night2, v_min=0.3, off=True):
 
     # -- write to file if desired
     if oname is not None:
-        fig.savefig(oname, format='png', clobber=True)
+        fig.savefig(os.path.join(output_dir, 'last_{}_{}_{}.png'.format(
+            tag_title, first_night+night1, first_night+night2)), format='png', clobber=True)
 
     return
