@@ -158,9 +158,3 @@ def multi_nights(output_dir, all_nights=False, nights=None):
             edge(curve='lightcurves_and_tstamps_tuple_{}.pkl'.format(n),output_dir=output_dir)
             
     print "Total runtime for all nights: {}".format(time.time() - start_all)
-
-
-def last_on():
-    '''
-    
-    '''

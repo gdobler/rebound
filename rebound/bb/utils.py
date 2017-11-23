@@ -351,6 +351,63 @@ def load_edges(cube=True, clip=None, light_class='all'):
         return lcs[:, clip_idx], lcgds[:, clip_idx], ons[:, clip_idx], offs[:, clip_idx], tstamps
 
 
+def last_off(offs, tstamps, clip=None, light_class='all'):
+    '''
+    Takes edge objects and determines "last off" for each source for each night.
+
+    Parameters:
+    -----------
+    offs : 3-d np.array
+        Array of off indices per night per source (nnights x nobs/night x nsources)
+
+    clip
+        If not None, clips sources according to clip_labels() method above.
+
+    Returns:
+    --------
+        Array of time last off per source per night (nnights x nsources)
+    '''
+    offs[nidx, :, :] = off
+
+    def tags(night):
+        i, j = np.where(offs[:, ::-1, :])
+        _, idx = np.unique(j, return_index=True)
+
+        x, y = np.where(offs[night, :, j[np.sort(idx)][::-1]].T)
+
+        return data[:, j[np.sort(idx)][::-1]].T, x, y
+
+
+
+num_files = bb_settings.NUM_EDGES
+
+    if cube:
+        lcs = np.empty((bb_settings.NUM_EDGES, bb_settings.CURVE_LENGTH, len(bb_settings.LABELS[1:])))
+        lcgds = np.empty((bb_settings.NUM_EDGES, bb_settings.CURVE_LENGTH, len(bb_settings.LABELS[1:])))
+        ons = np.empty((bb_settings.NUM_EDGES, bb_settings.CURVE_LENGTH, len(bb_settings.LABELS[1:])))
+        offs = np.empty((bb_settings.NUM_EDGES, bb_settings.CURVE_LENGTH, len(bb_settings.LABELS[1:])))
+        tstamps = np.empty((bb_settings.NUM_CURVES, bb_settings.CURVE_LENGTH))
+
+        nidx = 0
+
+        for i in sorted(os.listdir(bb_settings.EDGE_PATH)):
+            with open(os.path.join(bb_settings.EDGE_PATH, i), 'rb') as file:
+                lc, lcgd, on, off, ts = pickle.load(file)
+
+            lcs[nidx, :, :] = lc
+            lcgds[nidx, :, :] = lcgd
+            ons[nidx, :, :] = on
+            offs[nidx, :, :] = off
+            tstamps[nidx, :] = ts
+
+            nidx += 1
+
+            ratio_done = int(nidx*100.0 / num_files)
+            if nidx % 10 == 0:
+                print "{} % of nights loaded...".format(ratio_done)
+
+
+
 def plot(data=bb_settings.LABELS_MASK, clip=None):
     if clip is not None:
         final_msk = np.isin(data, clip)
