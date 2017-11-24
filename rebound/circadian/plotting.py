@@ -20,7 +20,7 @@ def simple_plot(img, wav, setlim=[0,1000], asp=0.45):
 	wav ; int
 		Wavelength to plot in [0,847]
 
-	asp : float (defaul 0.45)
+	asp : float (default 0.45)
 		Aspect ratio
 
 	Returns
