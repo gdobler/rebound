@@ -368,9 +368,21 @@ def last_off(offs, tstamps, clip=None, light_class='all'):
         Array of time last off per source per night (nnights x nsources)
     '''
     
-    # offs[nidx, :, :]
+    num_files = bb_settings.NUM_EDGES
+
+    last_offs = np.empty((num_files, offs.shape[2]))
+
+    for i in range(num_files):
+        if_on = offs[i].T * tstamps[i]
+
+        last_offs[i, :]
 
 
+    rows = np.any(input_mask, axis = 1)
+    # cols = np.any(input_mask, axis = 0)
+
+    rmin, rmax = np.where(rows)[0][[0, -1]]
+    # cmin, cmax = np.where(cols)[0][[0, -1]]
 
     # for night in 
 
