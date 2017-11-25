@@ -375,16 +375,13 @@ def last_off(offs, tstamps, clip=None, light_class='all'):
     for i in range(num_files):
         if_on = offs[i].T * tstamps[i]
 
-        last_offs[i, :]
+        if_on = np.max(if_on, axis=1)
 
+        if_on[if_on == 0.0] = None
 
-    rows = np.any(input_mask, axis = 1)
-    # cols = np.any(input_mask, axis = 0)
+        last_offs[i, :] = if_on
 
-    rmin, rmax = np.where(rows)[0][[0, -1]]
-    # cmin, cmax = np.where(cols)[0][[0, -1]]
-
-    # for night in 
+    return last_offs
 
 
 def plot(data=bb_settings.LABELS_MASK, clip=None):
