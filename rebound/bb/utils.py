@@ -351,7 +351,7 @@ def load_edges(cube=True, clip=None, light_class='all'):
         return lcs[:, clip_idx], lcgds[:, clip_idx], ons[:, clip_idx], offs[:, clip_idx], tstamps
 
 
-def last_off(offs, tstamps, clip=None, light_class='all'):
+def last_off(offs, tstamps, clip=None, light_class='all', time_convert=False):
     '''
     Takes edge objects and determines "last off" for each source for each night.
 
@@ -381,7 +381,25 @@ def last_off(offs, tstamps, clip=None, light_class='all'):
 
         last_offs[i, :] = if_on
 
-    return last_offs
+    if time_convert:
+        temp = np.ma.zeros(last_offs.shape)
+        temp[:,:] = last_offs
+        temp.mask = np.zeros_like(last_offs)
+        temp.mask[:,:] = np.isnan(last_offs)
+
+        def convert(data):
+            try:
+                return datetime.datetime.fromtimestamp(data)
+
+            except ValueError:
+                return np.ma.masked
+
+        cvect = np.vectorize(convert)
+
+        return cvect(temp).data
+
+    else:
+        return last_offs
 
 
 def plot(data=bb_settings.LABELS_MASK, clip=None):
