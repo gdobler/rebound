@@ -273,7 +273,7 @@ def mean_spectra(scans, labels, gow=False):
     Parameters:
     -----------
     scans : raw file
-        Stacked HSI scans data cube (nwav x nrows x ncols)
+        Stacked HSI scans data cube (nwav x nrows x ncols). Assumes scans have been suffificently cleaned.
 
     labels : numpy array
         2-d array of pixels of labeled sources (nrows x ncols)
