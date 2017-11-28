@@ -228,7 +228,7 @@ def augment_mask(labels, min_thresh=3):
 
 
 
-def sigma_clip(input_file, ax, sig_amp=3, iter=10):
+def sigma_clip(input_file, ax, sig_amp=3, iter=10, median_clip=False):
     '''
     Takes numpy memmap of an HSI scan and adjusts median by clipping extremes 
     and iterating in order to clear HSi scan.
@@ -256,7 +256,10 @@ def sigma_clip(input_file, ax, sig_amp=3, iter=10):
 
     # -- sigma clip along rows and reset the means, standard deviations, and masks
     for _ in range(iter):
-        avg             = np.mean(data, axis=ax, keepdims=True)
+        if median_clip:
+            avg         = np.median(data, axis=ax, keepdims=True)
+        else:
+            avg             = np.mean(data, axis=ax, keepdims=True)
         sig             = np.std(data, axis=ax, keepdims=True)
         data.mask = np.abs(data - avg) > sig_amp * sig
 

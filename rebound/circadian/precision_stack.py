@@ -185,7 +185,7 @@ def precision_stack(input_dir, month, night, states, bb_tstamps, opath, window=5
                 print "Time to read and reshape HSI scan:", t3-t2
                 print("Creating mask...")
 
-                t_idx = np.any(states_win, axis = 0)
+                t_idx = np.any(states_win, axis = 0) +1 # add 1 to compensate for previous removal of "0" labels
 
                 mask3d = np.empty(data.shape)
                 mask3d[:, :, :] = np.in1d(LABELS, np.arange(states.shape[1])[t_idx]).reshape(LABELS.shape)[np.newaxis, :, :]
