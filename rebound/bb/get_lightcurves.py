@@ -95,6 +95,7 @@ def get_curves(month, night, output_dir, file_start=0, file_stop=2700, step=1, c
     source_ts = []
 
 
+    # does not include '0' label
     for i in range(0, img_cube.shape[0]):
         src_sum = mm.sum(img_cube[i, :, :].astype(
             np.float32), bb_settings.LABELS_MASK, index=unique[1:])
