@@ -12,6 +12,8 @@ from scipy import linalg
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
+seed = np.random.seed(32)
+
 def scale_src(src_dict, gf=10):
 	'''
 	Scale and smooth the spectra to preprocess for clustering.
