@@ -135,7 +135,7 @@ def load_states(spath):
     return states, bb_tstamps
 
 
-def precision_stack(input_dir, month, night, states, bb_tstamps, opath, window=5, step=1):
+def precision_stack(input_dir, month, night, states, bb_tstamps, window=5, step=1):
     '''
     Input_dir : path to HSI raw files
     opath : path to save stacked scans
@@ -188,7 +188,9 @@ def precision_stack(input_dir, month, night, states, bb_tstamps, opath, window=5
                 t_idx = np.any(states_win, axis = 0)
 
                 mask3d = np.empty(data.shape)
-                mask3d[:, :, :] = np.in1d(LABELS, np.arange(states.shape[1])[t_idx]).reshape(LABELS.shape)[np.newaxis, :, :]
+
+                # shifting np.arange() list right by 1 to adjust for removing the 0 label in an earlier method
+                mask3d[:, :, :] = np.in1d(LABELS, np.arange(1, states.shape[1]+1)[t_idx]).reshape(LABELS.shape)[np.newaxis, :, :]
 
                 mask3d = mask3d.astype(bool)
 
@@ -200,7 +202,7 @@ def precision_stack(input_dir, month, night, states, bb_tstamps, opath, window=5
                 t5 = time.time()
                 print 'Time to mask data:', t5 - t4
 
-                HSI_list.append(data.astype(np.float32))
+                HSI_list.append(data.astype(np.float64))
                 print 'Time for {}:{}'.format(i, time.time()-t1)
 
     print 'Stacking...'
@@ -210,7 +212,7 @@ def precision_stack(input_dir, month, night, states, bb_tstamps, opath, window=5
 
     return stack
 
-def multi_stack(input_dir, spath, opath, night_list=NIGHTS, window=5, step=1):
+def multi_stack(input_dir, spath, opath, night_list=NIGHTS, window=5, step=1, save_nights=False):
     '''
     Runs precision stack method through list of months and nights.
     '''
@@ -219,22 +221,34 @@ def multi_stack(input_dir, spath, opath, night_list=NIGHTS, window=5, step=1):
     print "Loading on states array and timestamps..."
     states, bb_ts = load_states(spath)
 
-    all_hsi_list = []
+    if save_nights:
 
-    for n in night_list:
-        t1 = time.time()
-        print "Precision stacking for {}/{}".format(n[0],n[1])
+        for n in night_list:
 
-        all_hsi_list.append(precision_stack(input_dir=input_dir, month = n[0], night = n[1], 
-            states = states, bb_tstamps = bb_ts, opath=opath, window=window))
-        print "Time for {}/{}: {}".format(n[0],n[1],time.time()-t1)
+            stacked = precision_stack(input_dir=input_dir, month = n[0], night = n[1], 
+            states = states, bb_tstamps = bb_ts, window=window, step=step)
 
-    t2 = time.time()
-    
-    print "Stacking all nights..."
-    all_stack = reduce(np.add, all_hsi_list)
-    print "Time to stack : {}".format(time.time() - t2)
+            output = os.path.join(opath,"stacked_{}_{}.raw".format(n[0],n[1]))
 
-    all_stack.transpose(2, 0, 1)[..., ::-1].flatten().tofile(opath)
+            stacked.transpose(2, 0, 1)[...,::-1].flatten().tofile(output)
+
+    else:
+        all_hsi_list = []
+
+        for n in night_list:
+            t1 = time.time()
+            print "Precision stacking for {}/{}".format(n[0],n[1])
+
+            all_hsi_list.append(precision_stack(input_dir=input_dir, month = n[0], night = n[1], 
+                states = states, bb_tstamps = bb_ts, window=window, step=step))
+            print "Time for {}/{}: {}".format(n[0],n[1],time.time()-t1)
+
+        t2 = time.time()
+        
+        print "Stacking all nights..."
+        all_stack = reduce(np.add, all_hsi_list)
+        print "Time to stack : {}".format(time.time() - t2)
+
+        all_stack.transpose(2, 0, 1)[..., ::-1].flatten().tofile(opath)
 
     return
