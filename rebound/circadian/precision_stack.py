@@ -147,6 +147,8 @@ def precision_stack(input_dir, month, night, states, bb_tstamps, window=5, step=
     dir_path = os.path.join(input_dir, month, night)
     HSI_list = []
 
+    mincol = 0
+
     # read in HSI
     for i in sorted(os.listdir(dir_path))[::step]:
         if i.split('.')[-1] == 'raw':
@@ -164,25 +166,30 @@ def precision_stack(input_dir, month, night, states, bb_tstamps, window=5, step=
             states_win = states[(bb_tstamps < max_bound) & (bb_tstamps > min_bound), :]
             
             if states_win.shape[0] == 0:
-                print "No broadband image during window (i.e. truncated for daylight)..."
+                 print "No broadband image during window (i.e. truncated for daylight)..."
 
             else:
+                t2 = time.time()
                 # -- read the header
                 hdr = utils.read_header(fpath.replace("raw", "hdr"))
                 sh  = (hdr["nwav"], hdr["nrow"], hdr["ncol"])
 
-                t2 = time.time()
-                print "Time to read in HSI header:",t2-t1
-                print "Reading in HSI data..."
 
-                data = np.memmap(fpath, np.uint16, mode='r')
+                # data = utils.read_hyper(fpath).data[:,900:1200,1400:2200].copy()
 
-                data = data.copy().reshape(sh[2], sh[0], sh[1])[
-		   		:, :, ::-1][gow_col[0]:gow_col[1],:,gow_row[0]:gow_row[1]].transpose(1, 2, 0)
+                data = np.memmap(fpath, np.uint16, mode="r").copy()
+
+                print "Time to read in file {}".format(time.time() - t2)
+
+                t2a = time.time()
+                data = data.reshape(sh[2], sh[0], sh[1])[:, :, ::-1] \
+                .transpose(1, 2, 0)[:, 900:1200, 1400:2200]
+
+                t3 = time.time()
+                print "Time to reshape and slice: {}".format(time.time() - t2a)
 
                 print"Data shape is: {}".format(data.shape)
-                t3 = time.time()
-                print "Time to read and reshape HSI scan:", t3-t2
+
                 print("Creating mask...")
 
                 t_idx = np.any(states_win, axis = 0)
@@ -202,7 +209,9 @@ def precision_stack(input_dir, month, night, states, bb_tstamps, window=5, step=
                 t5 = time.time()
                 print 'Time to mask data:', t5 - t4
 
-                HSI_list.append(data.astype(np.float64))
+                HSI_list.append(data)
+
+                # HSI_list.append(data.astype(np.float64))
                 print 'Time for {}:{}'.format(i, time.time()-t1)
 
     print 'Stacking...'
@@ -212,43 +221,23 @@ def precision_stack(input_dir, month, night, states, bb_tstamps, window=5, step=
 
     return stack
 
-def multi_stack(input_dir, spath, opath, night_list=NIGHTS, window=5, step=1, save_nights=False):
+def multi_stack(input_dir, spath, opath, night_list=NIGHTS, window=5, step=1):
     '''
     Runs precision stack method through list of months and nights.
     '''
+
     t0 = time.time()
     # load array of light states and timestamps
     print "Loading on states array and timestamps..."
     states, bb_ts = load_states(spath)
 
-    if save_nights:
+    for n in night_list:
 
-        for n in night_list:
+        stacked = precision_stack(input_dir=input_dir, month = n[0], night = n[1], 
+        states = states, bb_tstamps = bb_ts, window=window, step=step)
 
-            stacked = precision_stack(input_dir=input_dir, month = n[0], night = n[1], 
-            states = states, bb_tstamps = bb_ts, window=window, step=step)
+        output = os.path.join(opath,"stacked_{}_{}.raw".format(n[0],n[1]))
 
-            output = os.path.join(opath,"stacked_{}_{}.raw".format(n[0],n[1]))
-
-            stacked.transpose(2, 0, 1)[...,::-1].flatten().tofile(output)
-
-    else:
-        all_hsi_list = []
-
-        for n in night_list:
-            t1 = time.time()
-            print "Precision stacking for {}/{}".format(n[0],n[1])
-
-            all_hsi_list.append(precision_stack(input_dir=input_dir, month = n[0], night = n[1], 
-                states = states, bb_tstamps = bb_ts, window=window, step=step))
-            print "Time for {}/{}: {}".format(n[0],n[1],time.time()-t1)
-
-        t2 = time.time()
-        
-        print "Stacking all nights..."
-        all_stack = reduce(np.add, all_hsi_list)
-        print "Time to stack : {}".format(time.time() - t2)
-
-        all_stack.transpose(2, 0, 1)[..., ::-1].flatten().tofile(opath)
+        stacked.transpose(2, 0, 1)[...,::-1].flatten().tofile(output)
 
     return

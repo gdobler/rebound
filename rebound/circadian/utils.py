@@ -257,16 +257,17 @@ def sigma_clip(input_file, ax, sig_amp=3, iter=10, median_clip=False):
     # -- sigma clip along rows and reset the means, standard deviations, and masks
     for _ in range(iter):
         if median_clip:
-            avg         = np.median(data, axis=ax, keepdims=True)
+            central_tend    = np.median(data, axis=ax, keepdims=True)
         else:
-            avg             = np.mean(data, axis=ax, keepdims=True)
-        sig             = np.std(data, axis=ax, keepdims=True)
-        data.mask = np.abs(data - avg) > sig_amp * sig
+            central_tend    = np.mean(data, axis=ax, keepdims=True)
+        sig                 = np.std(data, axis=ax, keepdims=True)
+        data.mask = np.abs(data - central_tend) > sig_amp * sig
 
+    final_median = np.median(data, axis=ax, keepdims=True)
 
-    return input_file - np.median(data, axis=ax, keepdims=True).data
+    return input_file - final_median
 
-def mean_spectra(scans, labels, gow=False):
+def mean_spectra(scans, labels, gow=False, find_sum=False):
     '''
     Takes a file of stacked HSI scans and an array of labels (i.e. broadband mask)
     and finds the mean spectra for the sources in lables.
@@ -302,7 +303,11 @@ def mean_spectra(scans, labels, gow=False):
     src_spectra = []
 
     for i in range(scans.shape[0]):
-        scan_mu = nd.measurements.mean(scans[i, :, :], labels, idx)
+        if find_sum:
+            scan_mu = nd.measurements.sum(scans[i, :, :], labels, idx)
+        else:
+            scan_mu = nd.measurements.mean(scans[i, :, :], labels, idx)
+
         scan_mu = scan_mu.reshape(scan_mu.shape[0], 1)
         src_spectra.append(scan_mu)
 
