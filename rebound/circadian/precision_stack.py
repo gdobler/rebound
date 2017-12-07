@@ -135,11 +135,12 @@ def load_states(spath):
     return states, bb_tstamps
 
 
-def precision_stack(input_dir, month, night, states, bb_tstamps, window=5, step=1):
+def precision_stack(input_dir, month, night, states, bb_tstamps, window=5, step=1, clean=False):
     '''
     Input_dir : path to HSI raw files
     opath : path to save stacked scans
     window : temporal window within which to stack (in minutes)
+    clean : if true, subtract the mean from raw file prior to stacking
 
     '''
     # --> utilities
@@ -202,17 +203,23 @@ def precision_stack(input_dir, month, night, states, bb_tstamps, window=5, step=
                 mask3d = mask3d.astype(bool)
 
                 t4 = time.time()
-                print 'Time to create 3d mask:', t4 - t3
+                print 'Time to create 3d mask:  ', t4 - t3
 
                 data[~mask3d] = 0
 
+                # clean
+                if clean:
+                    t4a = time.time()
+                    data = data - np.median(data, axis=2, keepdims=True)
+                    print "Time to subtract median:  ", time.time() - t4a
+
                 t5 = time.time()
-                print 'Time to mask data:', t5 - t4
+                print 'Time to mask data:  ', t5 - t4
 
                 HSI_list.append(data)
 
                 # HSI_list.append(data.astype(np.float64))
-                print 'Time for {}:{}'.format(i, time.time()-t1)
+                print 'Time for {}:  {}'.format(i, time.time()-t1)
 
     print 'Stacking...'
     stack = reduce(np.add, HSI_list)
@@ -221,7 +228,7 @@ def precision_stack(input_dir, month, night, states, bb_tstamps, window=5, step=
 
     return stack
 
-def multi_stack(input_dir, spath, opath, night_list=NIGHTS, window=5, step=1):
+def multi_stack(input_dir, spath, opath, night_list=NIGHTS, window=5, step=1, clean=False):
     '''
     Runs precision stack method through list of months and nights.
     '''
@@ -234,7 +241,7 @@ def multi_stack(input_dir, spath, opath, night_list=NIGHTS, window=5, step=1):
     for n in night_list:
 
         stacked = precision_stack(input_dir=input_dir, month = n[0], night = n[1], 
-        states = states, bb_tstamps = bb_ts, window=window, step=step)
+        states = states, bb_tstamps = bb_ts, window=window, step=step, clean=clean)
 
         output = os.path.join(opath,"stacked_{}_{}.raw".format(n[0],n[1]))
 
