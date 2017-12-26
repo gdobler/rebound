@@ -8,6 +8,7 @@ import utils
 import cPickle as pickle
 import time
 import datetime
+import pylab as pl
 from dateutil import tz
 
 # ---> GLOBAL VARIABLES
@@ -50,5 +51,26 @@ def calc_dur(states):
 
     return duration
 
-    # for plot
-    # ind = np.argsort(duration[0,:]); day1 = duration[:,ind]
+def plot_dur(data, sort_day):
+
+    if sort_day is not None:
+        ind = np.argsort(data[sort_day, :])
+        data = data[:,ind]
+        title = 'Broadband nightly duration by night sorted on day {}'.format(sort_day)
+    else:
+        title = 'Broadband nightly duration by night (unsorted)'
+
+
+    fig = pl.figure(figsize=(10,10))
+
+    pl.imshow(data.T, cmap='gist_gray', aspect='auto')
+
+    pl.title(title)
+    pl.ylabel('Sources')
+    pl.xlabel('Night starting on 6/25/2017')
+
+    # fig.canvas.draw()
+
+    pl.show()
+
+    return
