@@ -51,7 +51,7 @@ def calc_dur(states):
 
     return duration
 
-def plot_dur(data, sort_day):
+def plot_dur(data, sort_day, cm='hot'):
 
     if sort_day is not None:
         ind = np.argsort(data[sort_day, :])
@@ -63,7 +63,7 @@ def plot_dur(data, sort_day):
 
     fig = pl.figure(figsize=(10,10))
 
-    pl.imshow(data.T, cmap='gist_gray', aspect='auto')
+    pl.imshow(data.T, cmap=cm, aspect='auto')
 
     pl.title(title)
     pl.ylabel('Sources')
