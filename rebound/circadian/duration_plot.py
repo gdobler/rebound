@@ -3,13 +3,13 @@
 
 import os
 import numpy as np
-import pandas as pd
-import utils
+# import pandas as pd
+# import utils
 import cPickle as pickle
 import time
 import datetime
 import pylab as pl
-from dateutil import tz
+# from dateutil import tz
 
 # ---> GLOBAL VARIABLES
 NUM_OBS = 2700
@@ -51,7 +51,12 @@ def calc_dur(states):
 
     return duration
 
-def plot_dur(data, sort_day, cm='hot'):
+def plot_dur(data, sort_day, cm='hot', oname=None):
+    '''
+    Parameters:
+    ----------
+    Takes as input duration matrix (i.e. output of calc_dur()) and integer representing day (0-N for N nights) to sort on
+    '''
 
     if sort_day is not None:
         ind = np.argsort(data[sort_day, :])
@@ -69,8 +74,12 @@ def plot_dur(data, sort_day, cm='hot'):
     pl.ylabel('Sources')
     pl.xlabel('Night starting on 6/25/2017')
 
-    # fig.canvas.draw()
+    fig.canvas.draw()
 
     pl.show()
+
+    # -- write to file if desired
+    if oname is not None:
+        fig.savefig(oname, clobber=True)
 
     return
