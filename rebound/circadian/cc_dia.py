@@ -89,10 +89,21 @@ def calc_rgb(start=0, stop=1, step=30):
         
         data[f,:,:] = img
 
-    img75 = np.percentile(data, 75, axis=0).astype(np.uint8)
+    # img75 = np.percentile(data, 50, axis=0).astype(np.uint8)
 
-    rgb = rg8_to_rgb(img75)
+    img75 = np.median(data, axis=0).astype(np.uint8)
+
+    rgb = rg8_to_rgb(img75) * 1.0
+
+    # extract Gowanus labels as 2-d mask from 3-d rgb cube
+    maskrgb = rg8_to_rgb(BB_LABELS*mask)[:,:,0]
+
+    rg = rgb[:,:,0] - rgb[:,:,1]
+
+    bg = rgb[:,:,2] - rgb[:,:,1]
+
+    gow_rb= np.asarray([[rg[maskrgb==i].mean(), bg[maskrgb==i].mean()] for i in GOW_SRCS])
 
     print "Time to run: {}".format(time.time() - time_start)
 
-    return rgb
+    return gow_rb
