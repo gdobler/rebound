@@ -181,7 +181,7 @@ def single_ts(ts_array, clim=None, oname=None):
 
 def compare_curves(curves, ons, offs, night1, night2, v_min=0.3, off=True, oname=None):
     '''
-
+    ADD DOCS!
     '''
 
     # utils

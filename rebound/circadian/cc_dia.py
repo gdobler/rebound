@@ -30,7 +30,6 @@ NIGHTS = [('07','29'),('07','30'),('08','01'),('08','02'),('08','03'),('08','04'
           ('08','13'),('08','14'),('08','15'),('08','16'),('08','17'),('08','18'),('08','19')]
 RB_MATRIX = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','rb_matrix.npy'))
 
-
 def rg8_to_rgb(img):
     """
     Convert RG8 img to RGB image.  NOTE: no interpolation is performed, 
@@ -163,4 +162,3 @@ def cc_plot(rb=RB_MATRIX, duration='gow', cm='hot',oname=None):
         fig.savefig(oname, clobber=True)
 
     return
-

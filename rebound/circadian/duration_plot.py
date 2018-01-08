@@ -3,13 +3,10 @@
 
 import os
 import numpy as np
-# import pandas as pd
-# import utils
 import cPickle as pickle
 import time
 import datetime
 import pylab as pl
-# from dateutil import tz
 
 # ---> GLOBAL VARIABLES
 NUM_OBS = 2700
