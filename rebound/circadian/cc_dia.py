@@ -62,7 +62,7 @@ def load_states(spath=ON_STATES):
 
     return states, bb_tstamps
 
-def calc_rgb(start=0, stop=14, step=30):
+def calc_rgb(start=0, stop=14, step=30, gow=True):
     '''
     Parameters:
     -----------
@@ -80,7 +80,10 @@ def calc_rgb(start=0, stop=14, step=30):
     nights = NIGHTS[start:stop]
 
     # mask for Gow sources
-    mask = np.in1d(BB_LABELS, GOW_SRCS).reshape(BB_LABELS.shape)
+    if gow:
+        mask = np.in1d(BB_LABELS, GOW_SRCS).reshape(BB_LABELS.shape)
+    else:
+        mask = BB_LABELS>0
 
 
     print "loading flist..."
@@ -115,11 +118,14 @@ def calc_rgb(start=0, stop=14, step=30):
     # calc "blue-ish-ness"
     bg = rgb[:,:,2] - rgb[:,:,1]
 
-    gow_rb= np.asarray([[rg[maskrgb==i].mean(), bg[maskrgb==i].mean()] for i in GOW_SRCS])
+    if gow:
+        rb_matrix = np.asarray([[rg[maskrgb==i].mean(), bg[maskrgb==i].mean()] for i in GOW_SRCS])
+    else:
+        rb_matrix = np.asarray([[rg[maskrgb==i].mean(), bg[maskrgb==i].mean()] for i in np.unique(BB_LABELS)[1:]])
 
     print "Time to run: {}".format(time.time() - time_start)
 
-    return gow_rb
+    return rb_matrix
 
 def cc_plot(rb=RB_MATRIX, duration='gow', cm='hot',oname=None):
     '''

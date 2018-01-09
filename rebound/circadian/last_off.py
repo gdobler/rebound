@@ -5,6 +5,7 @@ import os
 import numpy as np
 # import duration_plot
 import cPickle as pickle
+import scipy.stats as stats
 # import time
 # import datetime
 import pylab as pl
@@ -21,7 +22,7 @@ LABELS = np.load(os.path.join(os.environ['REBOUND_WRITE'], 'final', 'hsi_pixels3
 GOW_SRCS = np.unique(LABELS)[1:]
 rb_matrix = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','rb_matrix.npy'))
 
-def color_last_off():
+def color_last_off(gow=True):
     '''
     ADD DOCS!
     '''
@@ -40,19 +41,33 @@ def color_last_off():
 
     mean_lo = np.mean(masked, axis=0).data
 
-    return mean_lo[GOW_SRCS]
+    if gow:
+        return mean_lo[GOW_SRCS]
+    else:
+        return mean_lo
 
-def plot_last(Y,rb_m=rb_matrix, oname=None):
+def plot_last(Y,rb_m=rb_matrix, blue=True, lr = False, oname=None):
 
     fig = pl.figure(figsize=(10,10))
 
-    X = rb_m[:,1]
+    if blue:
+        X = rb_m[:,1]
+    else:
+        X = rb_m[:,0]
 
-    pl.scatter(X, Y)
+    if lr:
+        model = stats.linregress(X, Y)
+
+        # pl.plot([X.min(), model[1]],[X.max(),X.max()*model[0]+model[1]],label='r={:.2f},p={:.2f}'.format(model[2],model[3]))
+
+    pl.scatter(X, Y,s=5, alpha=.6)
 
     pl.title("Color vs last off")
     pl.ylabel('Last off')
-    pl.xlabel('"Blue-ishness"')
+    if blue:
+        pl.xlabel('"Blue-ishness"')
+    else:
+        pl.xlabel('"Red-ishness"')
     pl.legend(loc='best')
 
     fig.canvas.draw()
