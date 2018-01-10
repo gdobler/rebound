@@ -28,7 +28,7 @@ GOW_SRCS = np.unique(LABELS)[1:]
 NIGHTS = [('07','29'),('07','30'),('08','01'),('08','02'),('08','03'),('08','04'),('08','05'),
           ('08','06'),('08','07'),('08','08'),('08','09'),('08','10'),('08','11'),('08','12'),
           ('08','13'),('08','14'),('08','15'),('08','16'),('08','17'),('08','18'),('08','19')]
-RB_MATRIX = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','rb_matrix.npy'))
+RGB_MATRIX = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','rgb_matrix_gow.npy'))
 
 def rg8_to_rgb(img):
     """
@@ -131,7 +131,7 @@ def calc_rgb(start=0, stop=14, step=30, gow=True):
 
     return rb_matrix
 
-def cc_plot(rb=RB_MATRIX, duration='gow', cm='hot',oname=None):
+def cc_plot(rb=RGB_MATRIX, duration='gow', cm='hot',oname=None):
     '''
     Parameters:
     -----------
@@ -156,7 +156,7 @@ def cc_plot(rb=RB_MATRIX, duration='gow', cm='hot',oname=None):
 
     fig = pl.figure(figsize=(10,10))
 
-    pl.scatter(rb[:,2], rb[:,0], c=nightly_duration, s=50, cmap=cm, alpha=0.5, label='Color=Mean night duration')
+    pl.scatter(rb[:,2], rb[:,0], c=nightly_duration, s=5, cmap=cm, alpha=0.5, label='Color=Mean night duration')
 
     pl.title("Reddish vs Blueishness for mean nightly duration")
     pl.ylabel('Relative reddishness (arb. units)')
