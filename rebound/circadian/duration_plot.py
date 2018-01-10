@@ -3,6 +3,7 @@
 
 import os
 import numpy as np
+import pandas as pd
 import cPickle as pickle
 import time
 import datetime
@@ -17,6 +18,7 @@ gow_col = (1400, 2200)
 LABELS = np.load(os.path.join(os.environ['REBOUND_WRITE'], 'final', 'hsi_pixels3.npy'))[
     gow_row[0]:gow_row[1], gow_col[0]:gow_col[1]]
 GOW_SRCS = np.unique(LABELS)[1:]
+RGB_MATRIX = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','rgb_matrix_gow.npy'))
 
 def load_states(spath=ON_STATES):
     '''
@@ -54,22 +56,35 @@ def plot_dur(data, sort_day, cm='hot', oname=None):
     ----------
     Takes as input duration matrix (i.e. output of calc_dur()) and integer representing day (0-N for N nights) to sort on
     '''
+    # utilities
 
-    if sort_day is not None:
+    if data=='preload':
+        data = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','duration_plot.npy'))
+
+    # dates for ticks
+    tks = np.arange(0,data.shape[0],10)
+    dates = pd.date_range('06-25-2017',periods=data.shape[0], freq='D')
+
+
+    if type(sort_day) == int:
         ind = np.argsort(data[sort_day, :])
         data = data[:,ind]
-        title = 'Broadband nightly duration by night sorted on day {}'.format(sort_day)
-    else:
-        title = 'Broadband nightly duration by night (unsorted)'
+        title = '"On" time duration per night for Gowanus light sources sorted on: {}'.format(dates[sort_day].date())
 
+    else:
+        cols = ['red', 'green','blue']
+        ind = np.argsort(RGB_MATRIX[:,cols.index(sort_day)])
+        data = data[:,ind]
+        title = '"On" time duration per night for Gowanus light sources sorted on: {} intensity'.format(sort_day)
 
     fig = pl.figure(figsize=(10,10))
 
     pl.imshow(data.T, cmap=cm, aspect='auto')
 
     pl.title(title)
-    pl.ylabel('Sources')
-    pl.xlabel('Night starting on 6/25/2017')
+    pl.ylabel('Light sources')
+    pl.xticks(tks,[d.date() for d in dates[tks]])
+    pl.xlabel('Observation night')
 
     fig.canvas.draw()
 

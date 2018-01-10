@@ -112,16 +112,20 @@ def calc_rgb(start=0, stop=14, step=30, gow=True):
     # extract Gowanus labels as 2-d mask from 3-d rgb cube
     maskrgb = rg8_to_rgb(BB_LABELS*mask)[:,:,0]
 
-    # calc "reddish-ness"
-    rg = rgb[:,:,0] - rgb[:,:,1]
+    # calculate color ratios
+    R = rgb[:,:,0]
+    G = rgb[:,:,1]
+    B = rgb[:,:,2]
+    RGB = R + G + B
 
-    # calc "blue-ish-ness"
-    bg = rgb[:,:,2] - rgb[:,:,1]
+    r = np.divide(R, RGB, out = np.zeros_like(R), where = RGB != 0)
+    g = np.divide(G, RGB, out = np.zeros_like(G), where = RGB != 0)
+    b = np.divide(B, RGB, out = np.zeros_like(B), where = RGB != 0)
 
     if gow:
-        rb_matrix = np.asarray([[rg[maskrgb==i].mean(), bg[maskrgb==i].mean()] for i in GOW_SRCS])
+        rb_matrix = np.asarray([[r[maskrgb==i].mean(), g[maskrgb==i].mean(), b[maskrgb==i].mean()] for i in GOW_SRCS])
     else:
-        rb_matrix = np.asarray([[rg[maskrgb==i].mean(), bg[maskrgb==i].mean()] for i in np.unique(BB_LABELS)[1:]])
+        rb_matrix = np.asarray([[r[maskrgb==i].mean(), g[maskrgb==i].mean(), b[maskrgb==i].mean()] for i in np.unique(BB_LABELS)[1:]])
 
     print "Time to run: {}".format(time.time() - time_start)
 
@@ -152,7 +156,7 @@ def cc_plot(rb=RB_MATRIX, duration='gow', cm='hot',oname=None):
 
     fig = pl.figure(figsize=(10,10))
 
-    pl.scatter(rb[:,1], rb[:,0], c=nightly_duration, s=50, cmap=cm, alpha=0.5, label='Color=Mean night duration')
+    pl.scatter(rb[:,2], rb[:,0], c=nightly_duration, s=50, cmap=cm, alpha=0.5, label='Color=Mean night duration')
 
     pl.title("Reddish vs Blueishness for mean nightly duration")
     pl.ylabel('Relative reddishness (arb. units)')
