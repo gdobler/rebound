@@ -131,7 +131,7 @@ def calc_rgb(start=0, stop=14, step=30, gow=True):
 
     return rb_matrix
 
-def cc_plot(rb=RGB_MATRIX, duration='gow', cm='hot',oname=None):
+def cc_plot(rb=RGB_MATRIX, duration='gow', rg_bg=False, n_thresh=0.05, cm='hot',oname=None):
     '''
     Parameters:
     -----------
@@ -149,19 +149,35 @@ def cc_plot(rb=RGB_MATRIX, duration='gow', cm='hot',oname=None):
     '''
 
     if duration == 'gow':
-        duration = duration_plot.calc_dur(duration_plot.load_states()[0])
+        data = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','duration_plot.npy'))
 
+    if n_thresh is not None:
+        thresh = data.mean(axis=0) + 2*data.std(axis=0)
+        above_thresh = data > thresh
+        n_idx = (above_thresh.sum(axis=1)*1.0 / above_thresh.shape[1]) < n_thresh
+        data = data[n_idx,:]
 
-    nightly_duration = np.mean(duration, axis=0)
+    nightly_duration = np.mean(data, axis=0)
 
     fig = pl.figure(figsize=(10,10))
 
-    pl.scatter(rb[:,2], rb[:,0], c=nightly_duration, s=5, cmap=cm, alpha=0.5, label='Color=Mean night duration')
+    if rg_bg:
+        X = rb[:,2] - rb[:,1] # blue - green
+        Y = rb[:,0] - rb[:,1] # red - green
+        pl.scatter(X, Y, c=nightly_duration, s=5, cmap=cm, alpha=0.5, label='Color=Mean night duration')
 
-    pl.title("Reddish vs Blueishness for mean nightly duration")
-    pl.ylabel('Relative reddishness (arb. units)')
-    pl.xlabel('Relative bluishness (arb. units)')
-    pl.legend(loc='best')
+        pl.title("Red-Green vs Blue-Green for mean nightly duration")
+        pl.ylabel('Red-Green (arb. units')
+        pl.xlabel('Blue-Green (arb. units')
+        pl.legend(loc='best')
+
+    else:
+        pl.scatter(rb[:,2], rb[:,0], c=nightly_duration, s=5, cmap=cm, alpha=0.5, label='Color=Mean night duration')
+
+        pl.title("Reddish vs Bluishness for mean nightly duration")
+        pl.ylabel('Relative reddishness (arb. units)')
+        pl.xlabel('Relative bluishness (arb. units)')
+        pl.legend(loc='best')
 
     fig.canvas.draw()
 
