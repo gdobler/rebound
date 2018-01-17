@@ -157,7 +157,8 @@ def cc_plot(rb=RGB_MATRIX, duration='gow', rg_bg=False, n_thresh=0.05, cm='hot',
         n_idx = (above_thresh.sum(axis=1)*1.0 / above_thresh.shape[1]) < n_thresh
         data = data[n_idx,:]
 
-    nightly_duration = np.mean(data, axis=0)
+    datam = np.ma.MaskedArray(data, mask=(data < 1e-08))
+    nightly_duration = np.mean(datam, axis=0).data
 
     fig = pl.figure(figsize=(10,10))
 
