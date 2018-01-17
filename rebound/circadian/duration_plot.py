@@ -106,9 +106,9 @@ def plot_dur(data, sort_day, n_thresh=0.05, cm='hot', oname=None):
         above_thresh = data > thresh
         n_idx = (above_thresh.sum(axis=1)*1.0 / above_thresh.shape[1]) < n_thresh
         data = data[n_idx,:]
-        # tks = tks[n_idx]
-        # dates = dates[n_idx]
 
+        tks = np.arange(0,data.shape[0],10)
+        dates = dates[n_idx]
 
     fig = pl.figure(figsize=(10,10))
 
