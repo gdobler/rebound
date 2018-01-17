@@ -50,7 +50,7 @@ def calc_dur(states):
 
     return duration
 
-def plot_dur(data, sort_day, cm='hot', oname=None):
+def plot_dur(data, sort_day, n_thresh=0.15, cm='hot', oname=None):
     '''
     Parameters:
     ----------
@@ -71,11 +71,26 @@ def plot_dur(data, sort_day, cm='hot', oname=None):
         data = data[:,ind]
         title = '"On" time duration per night for Gowanus light sources sorted on: {}'.format(dates[sort_day].date())
 
+    elif sort_day == 'rb':
+        r_b_matrix = RGB_MATRIX[:,0] - RGB_MATRIX[:,2]
+        ind = np.argsort(r_b_matrix)
+        data = data[:,ind]
+        title = '"On" time duration per night for Gowanus light sources sorted on red-blue intensity'
+
     else:
         cols = ['red', 'green','blue']
         ind = np.argsort(RGB_MATRIX[:,cols.index(sort_day)])
         data = data[:,ind]
         title = '"On" time duration per night for Gowanus light sources sorted on: {} intensity'.format(sort_day)
+
+    if n_thresh is not None:
+        thresh = data.mean(axis=0) + 2*data.std(axis=0)
+        above_thresh = data > thresh
+        n_idx = (above_thresh.sum(axis=1)*1.0 / above_thresh.shape[1]) < n_thresh
+        data = data[n_idx,:]
+        # tks = tks[n_idx]
+        # dates = dates[n_idx]
+
 
     fig = pl.figure(figsize=(10,10))
 
