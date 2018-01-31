@@ -9,7 +9,7 @@ import numpy as np
 import settings
 import utils
 
-def boxed_stack(input_mask, input_dir, sh, scale_factor, opath):
+def boxed_stack(input_mask, input_dir, scale_factor, step, opath):
     '''
     Stack HSI scans truncated by a pre-set bounding box.
 
@@ -35,12 +35,16 @@ def boxed_stack(input_mask, input_dir, sh, scale_factor, opath):
     Dimensions for Gowanus mask are: ncol=286 x nwav = 848, nrow = 99
     '''
     
-    rmin, rmax, cmin, cmax = utils.mask_box(input_mask)
+    # rmin, rmax, cmin, cmax = utils.mask_box(input_mask)
+    rmin,rmax = (900, 1200)
+    cmin,cmax = (1400, 2200)
+
+    sh = (848, 1600, 3194)
 
     scan_list = []
 
     start = time.time()
-    for i in os.listdir(input_dir):
+    for i in os.listdir(input_dir)[::step]:
         if i.split('.')[-1]=='raw':
         
             print('reading {}...'.format(i))
