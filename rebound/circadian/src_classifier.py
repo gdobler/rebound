@@ -51,6 +51,6 @@ train_y = train[:,2]
 test_y = test[:,2]
 
 # features
-train_x = train[:,2:]
-test_x = test[:,2:]
+train_x = train[:,3:]
+test_x = test[:,3:]
 
