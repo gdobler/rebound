@@ -4,7 +4,7 @@
 import os
 import settings
 import matplotlib
-matplotlib.use('TkAgg')
+matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -89,3 +89,42 @@ def hyper_viz(data, asp=0.45):
     plt.show()
 
     return
+
+def label_pixels(img, num_samples, src, oname, clip=None):
+    '''
+    Select src vs non-src labels.
+
+    Parameters:
+    ----------
+
+    img: 2-d numpy array (img file)
+        A processed image file (cleaned, stacked, etc)
+        Can be collapsed to 2-d (i.e. mean light intensity)
+
+    num_samples : int
+        Number of samples to collect.
+
+    src: bool
+        True if labeling sources, otherwise False for non-sources.
+
+    oname: str
+        Name of file to save.
+
+    clip : tuple of ints (default None)
+        (Min, Max) values to clip when plotting.
+
+    Returns:
+        Saves to disk numpy array of labels for <img_type> <src>
+    '''
+
+    plt.imshow(img, clim=[clip[0],clip[1]])
+
+    x = plt.ginput(num_samples, show_clicks=True, mouse_pop=3)
+
+    if src:
+        np.save(os.path.join(os.environ['REBOUND_WRITE'],'circadian','{}.npy'.format(oname)),x)
+
+    else:
+        np.save(os.path.join(os.environ['REBOUND_WRITE'],'circadian','{}.npy'.format(oname)),x)
+
+    plt.show()

@@ -6,51 +6,68 @@ from __future__ import print_function
 import numpy as np
 import os
 
-# spatial features
-# spectra (848 channels)
-# Local Moran's I value
+class SourceClassifier(object):
 
-hsi = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','gow_stack_clip_2018.npy'))
+	def __init__(self):
+		# load features
+		self.hsi = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','gow_stack_clip_2018.npy'))
+		self.lisas = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','spectra_lisas.npy'))
 
-nosrc_load = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','hsi_nosrc_labels.npy'))
-src_load = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','hsi_src_labels.npy'))
+		self.nosrc_load = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','hsi_nosrc_labels.npy'))
+		self.src_load = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','hsi_src_labels.npy'))
+		self.seed = np.random.seed(32)
 
-nosrc = np.empty((nosrc_load.shape[0],nosrc_load.shape[1]+1))
-src = np.empty((src_load.shape[0],src_load.shape[1]+1))
+		# load labeled pixel
+	def build_labels(self):
+		nosrc = np.empty((self.nosrc_load.shape[0],self.nosrc_load.shape[1]+1))
+		src = np.empty((self.src_load.shape[0],self.src_load.shape[1]+1))
 
-nosrc[:,:-1] = nosrc_load
-src[:,:-1] = src_load
+		nosrc[:,:-1] = self.nosrc_load
+		src[:,:-1] = self.src_load
 
-nosrc[:,-1] = 0
-src[:,-1] = 1
+		nosrc[:,-1] = 0
+		src[:,-1] = 1
 
-y = np.concatenate([src, nosrc], axis=0).round().astype(int)
+		self.y = np.concatenate([src, nosrc], axis=0).round().astype(int)
 
-x = hsi[:,y[:,1],y[:,0]]
+	def build_features(self,bin_size=8):
+		hsi_feat = self.hsi[:,self.y[:,1],self.y[:,0]].T
+		lisas_feat = self.lisas[:,self.y[:,1],self.y[:,0]].T
 
-all_data = np.empty((x.shape[1],x.shape[0]+3))
+		# reduce dimensions through binning
+		hsi_binned = hsi_feat.reshape(hsi_feat.shape[0],hsi_feat.shape[1]//bin_size,bin_size).mean(2)
+		lisas_binned = lisas_feat.reshape(lisas_feat.shape[0],lisas_feat.shape[1]//bin_size,bin_size).mean(2)
 
-all_data[:,:3] = y
+		self.x = np.append(hsi_binned, lisas_binned, axis=1)
 
-all_data[:,3:] = x.T
+	def split_data(self):
+		# merged data
+		merged = np.empty((self.x.shape[0],self.x.shape[1]+3))
 
-np.random.shuffle(all_data)
+		merged[:,:3] = self.y
+		merged[:,3:] = self.x
 
-# 75/25 split
-cut = (all_data.shape[0]//4)*3
+		np.random.shuffle(merged)
 
-train =  all_data[:cut,:]
-test = all_data[cut:,:]
+		# 75/25 split
+		cut = (merged.shape[0]//4)*3
 
-# x,y coordinates
-train_loc = train[:,:2]
-test_loc = test[:,:2]
+		self.train =  merged[:cut,:]
+		self.test = merged[cut:,:]
 
-# target variable
-train_y = train[:,2]
-test_y = test[:,2]
+		# # i,j coordinates
+		self.train_loc = self.train[:,:2]
+		self.test_loc = self.test[:,:2]
 
-# features
-train_x = train[:,3:]
-test_x = test[:,3:]
+		# # target variable
+		self.train_y = self.train[:,2]
+		self.test_y = self.test[:,2]
+
+		# # features
+		self.train_x = self.train[:,3:]
+		self.test_x = self.test[:,3:]
+
+	def scale_data(self, arr):
+		return data / data.max()
+
 
