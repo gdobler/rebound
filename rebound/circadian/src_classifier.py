@@ -6,6 +6,7 @@ from __future__ import print_function
 import numpy as np
 import os
 from sklearn.svm import SVC
+from sklearn.metrics import f1_score
 
 class SourceClassifier(object):
 
@@ -81,6 +82,7 @@ class SourceClassifier(object):
 
 	def balanced_f(yhat, ytrue, class1=1.0):
 		prec = ((yhat == class1) & (ytrue == class1)).sum() * 1.0 / (yhat == class1).sum()
+
 		rec = ((yhat == class1) & (ytrue == class1)).sum() * 1.0 / (ytrue == class1).sum()
 
 		return 2 * ((prec * rec) / (prec + rec))
@@ -90,9 +92,10 @@ class SourceClassifier(object):
 		model = sv.fit(train_x,train_y)
 		results = sv.predict(test_x)
 
-		accuracy = (results == testy_y).sum()*1.0 / test_y.shape[0]
+		accuracy = (results == test_y).sum()*1.0 / test_y.shape[0]
 
-		f1 = self.balanced_f(results, test_y)
+		# f1 = self.balanced_f(results, test_y)
+		f1 = f1_score(test_y, results)
 
 		return results, accuracy, f1
 
@@ -103,17 +106,17 @@ class SourceClassifier(object):
 
 		np.random.shuffle(merged)
 
-		cuts = np.linspace(0, merged.shape[0]-1,k).astype(int)
+		cuts = np.linspace(0, merged.shape[0]-1,k+1).astype(int)
 
 		kdict = {}
 		k_results = {}
 
-		for i in range(k-1):
+		for i in range(k):
 			kdict[i] = merged[cuts[i]:cuts[i+1],:]
 
 		for k,v in kdict.items():
 			ktest = v
-			ktrain = np.stack([j for i,j in kdict.items() if i != k], axis=0)
+			ktrain = np.concatenate([j for i,j in kdict.items() if i != k], axis=0)
 
 			trx = ktrain[:,:-1]
 			tr_y = ktrain[:,-1]
@@ -121,10 +124,28 @@ class SourceClassifier(object):
 			tex = ktest[:,:-1]
 			tey = ktest[:,-1]
 
-			trx_scld= self.scale_data(trx)
-			tex_scld = self.scale_data(tex)
+			# trx_scld= self.scale_data(trx)[1]
+			# tex_scld = self.scale_data(tex)[1]
+			trx_scld= trx.copy()
+			tex_scld = tex.copy()
 
 			res,acc,f1 = self.run_svc(trx_scld, tr_y, tex_scld, tey, penalty=1.0, knl='rbf', deg=3, gm='auto')
-			k_results[k] = (acc,f1)
+			k_results[k] = (res, acc,f1)
+			# k_results[k] = acc
 
 		self.k_results = k_results
+
+	def build_dataset(self):
+		self.build_labels()
+		self.build_features()
+		self.split_data()
+
+	def get_cv_metrics(self):
+		self.cv_acc = np.mean([v[1] for k,v in self.k_results.items()])
+		self.cv_f1 = np.nanmean([v[2] for k,v in self.k_results.items()])
+
+	def model_eval(self):
+		kernels = ['linear', 'rbf', 'poly']
+		polys = [3,4,5,6]
+		penalties = 1.0
+
