@@ -99,7 +99,7 @@ class SourceClassifier(object):
 
 		return results, accuracy, f1
 
-	def kfolds(self, k):
+	def kfolds(self, k, penalty=1.0, knl='rbf', deg=3, gm='auto'):
 		merged = np.empty((self.train_x.shape[0],self.train_x.shape[1]+1))
 		merged[:,:-1] = self.train_x
 		merged[:,-1] = self.train_y
@@ -129,23 +129,56 @@ class SourceClassifier(object):
 			trx_scld= trx.copy()
 			tex_scld = tex.copy()
 
-			res,acc,f1 = self.run_svc(trx_scld, tr_y, tex_scld, tey, penalty=1.0, knl='rbf', deg=3, gm='auto')
+			res,acc,f1 = self.run_svc(trx_scld, tr_y, tex_scld, tey, penalty, knl, deg, gm)
 			k_results[k] = (res, acc,f1)
 			# k_results[k] = acc
 
-		self.k_results = k_results
+		return k_results
 
 	def build_dataset(self):
 		self.build_labels()
 		self.build_features()
 		self.split_data()
 
-	def get_cv_metrics(self):
-		self.cv_acc = np.mean([v[1] for k,v in self.k_results.items()])
-		self.cv_f1 = np.nanmean([v[2] for k,v in self.k_results.items()])
+	def get_cv_metrics(self,k_results):
+		cv_acc = np.mean([v[1] for k,v in k_results.items()])
+		cv_f1 = np.nanmean([v[2] for k,v in k_results.items()])
 
-	def model_eval(self):
+		return cv_acc, cv_f1
+
+	def model_eval(self, k, clog=10, glog=3, kernel_eval=False, method='f1'):
 		kernels = ['linear', 'rbf', 'poly']
-		polys = [3,4,5,6]
-		penalties = 1.0
+		poly_d = [3,4,5,6]
+		c_range = np.logspace(-2, clog, 11)
+		g_range = np.logspace(-9, glog, 11)
+
+
+		def run_params(self, k, knl, deg, method):
+			'''
+			Grid for accuracy or f1 score
+			'''
+			param_grid = np.empty((len(c_range),len(g_range)))
+
+			for c in range(len(c_range)):
+				for g in range(len(g_range)):
+					model_out = self.kfolds(k=k, penalty=c_range[c], knl=knl, deg=deg, gm=g_range[g])
+					
+					if method=='f1':
+						param_grid[c,g] = self.get_cv_metrics(model_out)[1]
+					
+					elif method=='acc':
+						param_grid[c,g] = self.get_cv_metrics(model_out)[0] 
+
+			return param_grid
+
+		if kernel_eval:
+			pass
+		else:
+			p_grid = run_params(self, k=k, knl=kernels[1], deg=poly_d[0],method=method)
+
+		return p_grid
+
+		# imshow(pgrid, interpolation='nearest', cmap=cm.hot)
+
+
 
