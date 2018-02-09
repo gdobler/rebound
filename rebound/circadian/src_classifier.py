@@ -150,7 +150,7 @@ class SourceClassifier(object):
 		kernels = ['linear', 'rbf', 'poly']
 		poly_d = [3,4,5,6]
 		c_range = np.logspace(-2, clog, 11)
-		g_range = np.logspace(-9, glog, 11)
+		g_range = np.logspace(-2, glog, 11)
 
 
 		def run_params(self, k, knl, deg, method):

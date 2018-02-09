@@ -90,41 +90,55 @@ def hyper_viz(data, asp=0.45):
 
     return
 
-def label_pixels(img, num_samples, src, oname, clip=None):
-    '''
-    Select src vs non-src labels.
+class LabelPixels(object):
 
-    Parameters:
-    ----------
+    def __init__(self, img = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','gow_stack_clip_2018.npy'))):
+        self.img = img
+        self.lm = img.mean(0)
+        self.src_labels = []
+        self.nosrc_labels = []
 
-    img: 2-d numpy array (img file)
-        A processed image file (cleaned, stacked, etc)
-        Can be collapsed to 2-d (i.e. mean light intensity)
 
-    num_samples : int
-        Number of samples to collect.
+    def label_pixs(self, num_samples, src, clip=None):
+        '''
+        Select src vs non-src labels.
 
-    src: bool
-        True if labeling sources, otherwise False for non-sources.
+        Parameters:
+        ----------
 
-    oname: str
-        Name of file to save.
+        img: 2-d numpy array (img file)
+            A processed image file (cleaned, stacked, etc)
+            Can be collapsed to 2-d (i.e. mean light intensity)
 
-    clip : tuple of ints (default None)
-        (Min, Max) values to clip when plotting.
+        num_samples : int
+            Number of samples to collect.
 
-    Returns:
-        Saves to disk numpy array of labels for <img_type> <src>
-    '''
+        src: bool
+            True if labeling sources, otherwise False for non-sources.
 
-    plt.imshow(img, clim=[clip[0],clip[1]])
+        oname: str
+            Name of file to save.
 
-    x = plt.ginput(num_samples, show_clicks=True, mouse_pop=3)
+        clip : tuple of ints (default None)
+            (Min, Max) values to clip when plotting.
 
-    if src:
-        np.save(os.path.join(os.environ['REBOUND_WRITE'],'circadian','{}.npy'.format(oname)),x)
+        Returns:
+            Saves to disk numpy array of labels for <img_type> <src>
+        '''
 
-    else:
-        np.save(os.path.join(os.environ['REBOUND_WRITE'],'circadian','{}.npy'.format(oname)),x)
+        plt.imshow(self.lm, clim=[clip[0],clip[1]])
 
-    plt.show()
+        self.x = plt.ginput(num_samples, timeout=-1, show_clicks=True, mouse_pop=3)
+
+        if src:
+            self.src_labels.append(self.x)
+
+        else:
+            self.nosrc_labels.append(self.x)
+
+        plt.show()
+
+    def save_to_disk(self, arr, oname):
+            np.save(os.path.join(os.environ['REBOUND_WRITE'],'circadian','{}.npy'.format(oname)),arr)
+
+        
