@@ -6,31 +6,55 @@ from __future__ import print_function
 import numpy as np
 import os
 from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import f1_score
 
 class SourceClassifier(object):
 
-	def __init__(self):
+	def __init__(self, inpath=os.path.join(os.environ['REBOUND_WRITE'],'circadian')):
 		# load features
+
+		self.inpath = inpath
+
+		nosrc = []
+		src = []
+		for i in os.listdir(self.inpath):
+			if i[:16] == 'hsi_nosrc_labels':
+				nosrc.append(np.load(os.path.join(self.inpath,i)))
+
+			elif i[:14] == 'hsi_src_labels':
+				src.append(np.load(os.path.join(self.inpath,i)))
+
+		nosrc = np.concatenate(nosrc, axis=0).round().astype(int)
+		src = np.concatenate(src, axis=0).round().astype(int)
+		
+		# remove duplicate pixels
+		self.nosrc = np.array(list(set([(nosrc[i][0],nosrc[i][1]) for i in range(nosrc.shape[0])])))
+		self.src = np.array(list(set([(nosrc[i][0],nosrc[i][1]) for i in range(src.shape[0])])))
+
+		# balance classes
+		level_cut = min(self.nosrc.shape[0],self.src.shape[0])
+		self.nosrc = self.nosrc[:level_cut,:]
+		self.src = self.src[:level_cut,:]
+
 		self.hsi = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','gow_stack_clip_2018.npy'))
 		self.lisas = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','spectra_lisas.npy'))
 
-		self.nosrc_load = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','hsi_nosrc_labels.npy'))
-		self.src_load = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','hsi_src_labels.npy'))
 		self.seed = np.random.seed(32)
 
 		# load labeled pixel
 	def build_labels(self):
-		nosrc = np.empty((self.nosrc_load.shape[0],self.nosrc_load.shape[1]+1))
-		src = np.empty((self.src_load.shape[0],self.src_load.shape[1]+1))
+		nosrc = np.empty((self.nosrc.shape[0],self.nosrc.shape[1]+1))
+		src = np.empty((self.src.shape[0],self.src.shape[1]+1))
 
-		nosrc[:,:-1] = self.nosrc_load
-		src[:,:-1] = self.src_load
+		nosrc[:,:-1] = self.nosrc
+		src[:,:-1] = self.src
 
 		nosrc[:,-1] = 0
 		src[:,-1] = 1
 
-		self.y = np.concatenate([src, nosrc], axis=0).round().astype(int)
+		self.y = np.concatenate([src, nosrc], axis=0).astype(int)
 
 	def build_features(self,bin_size=8):
 		hsi_feat = self.hsi[:,self.y[:,1],self.y[:,0]].T
@@ -69,16 +93,16 @@ class SourceClassifier(object):
 		self.train_x = self.train[:,3:]
 		self.test_x = self.test[:,3:]
 
-	def scale_data(self, arr, feat_range=[0,1]):
+	def scale_data(self, arr):
 		'''
 		assumes shape n_samples x n_features
 		default feature range is [0,1] but can be fit to training data min/max
 		'''
-		arr_std = (arr - arr.min(axis=0)) / (arr.max(axis=0) - arr.min(axis=0))
+		arr_mu = arr.mean(axis=0)
+		arr_std = arr.std(axis=0)
+		arr_scaled = (arr - arr_mu)*1.0 / (arr_std + (arr_std==0))
 
-		arr_scaled = arr_std * (feat_range[1] - feat_range[0]) + feat_range[0]
-
-		return arr_std, arr_scaled
+		return arr_scaled, arr_mu, arr_std
 
 	def balanced_f(yhat, ytrue, class1=1.0):
 		prec = ((yhat == class1) & (ytrue == class1)).sum() * 1.0 / (yhat == class1).sum()
@@ -99,14 +123,18 @@ class SourceClassifier(object):
 
 		return results, accuracy, f1
 
-	def kfolds(self, k, penalty=1.0, knl='rbf', deg=3, gm='auto'):
+	def kfolds(self, k, penalty=1.0, knl='rbf', deg=3, gm='auto', normed=False):
 		merged = np.empty((self.train_x.shape[0],self.train_x.shape[1]+1))
 		merged[:,:-1] = self.train_x
 		merged[:,-1] = self.train_y
 
 		np.random.shuffle(merged)
 
+		self.merged = merged
+
 		cuts = np.linspace(0, merged.shape[0]-1,k+1).astype(int)
+
+		self.cuts = cuts
 
 		kdict = {}
 		k_results = {}
@@ -124,14 +152,13 @@ class SourceClassifier(object):
 			tex = ktest[:,:-1]
 			tey = ktest[:,-1]
 
-			# trx_scld= self.scale_data(trx)[1]
-			# tex_scld = self.scale_data(tex)[1]
-			trx_scld= trx.copy()
-			tex_scld = tex.copy()
+			k_results[k] = (trx, tr_y, tex, tey)
+
+			trx_scld= self.scale_data(trx)[0]
+			tex_scld = self.scale_data(tex)[0]
 
 			res,acc,f1 = self.run_svc(trx_scld, tr_y, tex_scld, tey, penalty, knl, deg, gm)
 			k_results[k] = (res, acc,f1)
-			# k_results[k] = acc
 
 		return k_results
 
@@ -146,7 +173,7 @@ class SourceClassifier(object):
 
 		return cv_acc, cv_f1
 
-	def model_eval(self, k, clog=10, glog=3, kernel_eval=False, method='f1'):
+	def svc_model_eval(self, k, clog=10, glog=3, kernel_eval=False, method='f1'):
 		kernels = ['linear', 'rbf', 'poly']
 		poly_d = [3,4,5,6]
 		c_range = np.logspace(-2, clog, 11)
