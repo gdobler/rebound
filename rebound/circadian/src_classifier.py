@@ -10,6 +10,9 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import f1_score
 
+# optimum c = 2.5
+# optimum gamma = 1.5e5
+
 class SourceClassifier(object):
 
 	def __init__(self, inpath=os.path.join(os.environ['REBOUND_WRITE'],'circadian')):
@@ -123,18 +126,25 @@ class SourceClassifier(object):
 
 		return results, accuracy, f1
 
-	def kfolds(self, k, penalty=1.0, knl='rbf', deg=3, gm='auto', normed=False):
+	def run_rf(self, train_x, train_y, test_x, test_y, num_trees=10):
+		rf = RandomForestClassifier(n_estimators=num_trees)
+		model = rf.fit(train_x, train_y)
+		results = rf.predict(test_x)
+
+		accuracy = (results == test_y).sum()*1.0 / test_y.shape[0]
+
+		f1 = f1_score(test_y, results)
+
+		return results, accuracy, f1
+
+	def kfolds(self, k, penalty=1.0, knl='rbf', deg=3, gm='auto', num_trees=None):
 		merged = np.empty((self.train_x.shape[0],self.train_x.shape[1]+1))
 		merged[:,:-1] = self.train_x
 		merged[:,-1] = self.train_y
 
 		np.random.shuffle(merged)
 
-		self.merged = merged
-
 		cuts = np.linspace(0, merged.shape[0]-1,k+1).astype(int)
-
-		self.cuts = cuts
 
 		kdict = {}
 		k_results = {}
@@ -157,7 +167,11 @@ class SourceClassifier(object):
 			trx_scld= self.scale_data(trx)[0]
 			tex_scld = self.scale_data(tex)[0]
 
-			res,acc,f1 = self.run_svc(trx_scld, tr_y, tex_scld, tey, penalty, knl, deg, gm)
+			if num_trees is not None:
+				res,acc,f1 = self.run_svc(trx_scld, tr_y, tex_scld, tey, penalty, knl, deg, gm)
+			else:
+				res,acc,f1 = self.run_rf(trx_scld, tr_y, tex_scld, tey, n_estimators=num_trees)
+				
 			k_results[k] = (res, acc,f1)
 
 		return k_results
@@ -177,7 +191,7 @@ class SourceClassifier(object):
 		kernels = ['linear', 'rbf', 'poly']
 		poly_d = [3,4,5,6]
 		c_range = np.logspace(-2, clog, 11)
-		g_range = np.logspace(-2, glog, 11)
+		g_range = np.logspace(-9, glog, 11)
 
 
 		def run_params(self, k, knl, deg, method):
