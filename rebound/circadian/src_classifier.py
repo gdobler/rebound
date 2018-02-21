@@ -10,7 +10,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import f1_score
 
-# optimum c = 2.5
+# optimum c = 2.5118
 # optimum gamma = 1.5e5
 
 class SourceClassifier(object):
@@ -167,7 +167,7 @@ class SourceClassifier(object):
 			trx_scld= self.scale_data(trx)[0]
 			tex_scld = self.scale_data(tex)[0]
 
-			if num_trees is not None:
+			if num_trees is None:
 				res,acc,f1 = self.run_svc(trx_scld, tr_y, tex_scld, tey, penalty, knl, deg, gm)
 			else:
 				res,acc,f1 = self.run_rf(trx_scld, tr_y, tex_scld, tey, n_estimators=num_trees)
@@ -220,6 +220,33 @@ class SourceClassifier(object):
 		return p_grid
 
 		# imshow(pgrid, interpolation='nearest', cmap=cm.hot)
+	def final_test(self, b_size=8, penalty=2.5188, knl='rbf', deg=3, gm=1.5e5):
 
+		def bin_data(data, bs):
+			start_idx = 0
+			end_idx = bs
+		
+			binned = np.empty((data.shape[0]//bs, data.shape[1], data.shape[2]))
+			for i in range(0, data.shape[0]//bs):
+				binned[i, :, :] = data[start_idx:end_idx, : , :].mean(0)
+				start_idx += bs
+				end_idx += bs
+
+			binned = binned.transpose(1, 2, 0)
+
+			binned = binned.reshape(-1, binned.shape[-1])
+
+			return binned
+
+		train_x = self.scale_data(self.train_x)[0]
+
+		hsi_bin = bin_data(self.hsi, bs=b_size)
+		lisas_bin = bin_data(self.lisas, bs=b_size)
+		
+		self.final_test_x = self.scale_data(np.append(hsi_bin, lisas_bin, axis=1))[0]
+
+		sv = SVC(C=penalty, kernel=knl, degree=deg, gamma=gm)
+		model = sv.fit(train_x, self.train_y)
+		self.results = sv.predict(self.final_test_x)
 
 
