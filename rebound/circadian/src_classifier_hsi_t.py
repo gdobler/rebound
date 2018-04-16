@@ -73,21 +73,23 @@ class SourceClassifier(object):
 
 		features = np.empty((self.y.shape[0], 192*848))
 
-		fpath= os.path.join(os.environ['REBOUND_DATA'])
+		fpath= os.path.join(os.environ['REBOUND_DATA'],'hsi')
 			
 		idx = 0
 
 		for i in sorted(os.listdir(fpath)):
-			ipath = os.path.join(fpath,i)
+			if i.split('.')[-1]=='raw':
+				print('Reading {}...'.format(i))
+				ipath = os.path.join(fpath,i)
 
-			# data = utils.read_hyper(fpath).data[:,900:1200,1400:2200].copy()
-			data = np.memmap(ipath, np.uint16, mode="r").copy()
+				# data = utils.read_hyper(fpath).data[:,900:1200,1400:2200].copy()
+				data = np.memmap(ipath, np.uint16, mode="r").copy()
 
-			data = data.reshape(sh[2], sh[0], sh[1])[:, :, ::-1].transpose(1, 2, 0)[:, 900:1200, 1400:2200]
+				data = data.reshape(sh[2], sh[0], sh[1])[:, :, ::-1].transpose(1, 2, 0)[:, 900:1200, 1400:2200]
 
-			features[:,idx:idx+848] = data[:,sc.y[:,1], sc.y[:,0]].T
+				features[:,idx:idx+848] = data[:,self.y[:,1], self.y[:,0]].T
 
-			idx += 848
+				idx += 848
 
 
 		self.x = features
