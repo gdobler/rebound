@@ -92,9 +92,21 @@ def hyper_viz(data, asp=0.45):
 
 class LabelPixels(object):
 
-    def __init__(self, img = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','gow_stack_clip_2018.npy'))):
-        self.img = img
-        self.lm = img.mean(0)
+    def __init__(self, img = os.path.join(os.environ['REBOUND_WRITE'],'circadian','gow_stack_clip_2018.npy'), bb=False):
+        self.bb = bb
+        if self.bb:
+            img = np.fromfile(img, dtype=np.uint8).reshape(3072, 4096)
+
+            red = img[::2, 1::2]
+            grn = img[::2, ::2] #// 2 + img[1::2, 1::2] // 2
+            blu = img[1::2, ::2]
+
+            self.img = np.dstack((red, grn, blu))
+
+        else:
+            self.img = np.load(img)
+            self.lm = img.mean(0)
+        
         self.src_labels = []
         self.nosrc_labels = []
 
@@ -125,8 +137,11 @@ class LabelPixels(object):
         Returns:
             Saves to disk numpy array of labels for <img_type> <src>
         '''
+        if self.bb:
+            plt.imshow(self.img)
 
-        plt.imshow(self.lm, clim=[clip[0],clip[1]])
+        else:
+            plt.imshow(self.lm, clim=[clip[0],clip[1]])
 
         self.x = plt.ginput(num_samples, timeout=-1, show_clicks=True, mouse_pop=3)
 

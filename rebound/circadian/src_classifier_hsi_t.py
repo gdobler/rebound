@@ -16,83 +16,56 @@ from sklearn.metrics import f1_score
 
 class SourceClassifier(object):
 
-	def __init__(self, inpath=os.path.join(os.environ['REBOUND_WRITE'],'circadian')):
+	def __init__(self, lpath=os.path.join(os.environ['HOME_UO'],'circadian','hsi_training_labels.npy')):
 		# load features
 
-		self.inpath = inpath
-
-		nosrc = []
-		src = []
-		for i in os.listdir(self.inpath):
-			if i[:16] == 'hsi_nosrc_labels':
-				nosrc.append(np.load(os.path.join(self.inpath,i)))
-
-			elif i[:14] == 'hsi_src_labels':
-				src.append(np.load(os.path.join(self.inpath,i)))
-
-		nosrc = np.concatenate(nosrc, axis=0).round().astype(int)
-		src = np.concatenate(src, axis=0).round().astype(int)
-		
-		# remove duplicate pixels
-		self.nosrc = np.array(list(set([(nosrc[i][0],nosrc[i][1]) for i in range(nosrc.shape[0])])))
-		self.src = np.array(list(set([(nosrc[i][0],nosrc[i][1]) for i in range(src.shape[0])])))
-
-		# balance classes
-		level_cut = min(self.nosrc.shape[0],self.src.shape[0])
-		self.nosrc = self.nosrc[:level_cut,:]
-		self.src = self.src[:level_cut,:]
+		self.labels = np.load(lpath)
 
 		self.nights = [('07','29'),('07','30'),('08','01'),('08','02'),('08','03'),('08','04'),('08','05'),
           ('08','06'),('08','07'),('08','08'),('08','09'),('08','10'),('08','11'),('08','12'),
           ('08','13'),('08','14'),('08','15'),('08','16'),('08','17'),('08','18'),('08','19')]
 
-		# self.hsi = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','gow_stack_clip_2018.npy'))
-		# self.lisas = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','spectra_lisas.npy'))
-
 		self.seed = np.random.seed(32)
-
-		# load labeled pixel
-	def build_labels(self):
-		nosrc = np.empty((self.nosrc.shape[0],self.nosrc.shape[1]+1))
-		src = np.empty((self.src.shape[0],self.src.shape[1]+1))
-
-		nosrc[:,:-1] = self.nosrc
-		src[:,:-1] = self.src
-
-		nosrc[:,-1] = 0
-		src[:,-1] = 1
-
-		self.y = np.concatenate([src, nosrc], axis=0).astype(int)
-
 
 	def build_features(self,bin_size=8):
 
-		# code uses stacked hsi files found at 
-		nfiles = 192
-		sh = (848, 1600, 3194) 
+		n_nights = 1
 
-		features = np.empty((self.y.shape[0], 192*848))
+		features = np.empty((self.labels.shape[0], n_nights*80*(848/bin_size)))
 
-		fpath= os.path.join(os.environ['REBOUND_DATA'],'hsi')
+		dpath = os.path.join(os.environ['REBOUND_DATA'],'hsi','2017')
+
+		bin_edges = np.linspace(0,848,848/bin_size)
 			
 		idx = 0
+		icount = 0
 
-		for i in sorted(os.listdir(fpath)):
-			if i.split('.')[-1]=='raw':
-				print('Reading {}...'.format(i))
-				ipath = os.path.join(fpath,i)
+		for n in self.nights[:n_nights]:
 
-				# data = utils.read_hyper(fpath).data[:,900:1200,1400:2200].copy()
-				data = np.memmap(ipath, np.uint16, mode="r").copy()
+			for i in sorted(os.listdir(os.path.join(dpath, n[0], n[1])))[:2]:
+				if i.split('.')[-1]=='raw':
 
-				data = data.reshape(sh[2], sh[0], sh[1])[:, :, ::-1].transpose(1, 2, 0)[:, 900:1200, 1400:2200]
+					if icount % 50 == 0:
+						print('Reading {} of {}...'.format(icount, n_nights*80))
 
-				features[:,idx:idx+848] = data[:,self.y[:,1], self.y[:,0]].T
+					fpath = os.path.join(dpath, n[0], n[1],i)
 
-				idx += 848
+					hdr = utils.read_header(fpath.replace("raw", "hdr"))
+					sh  = (hdr["nwav"], hdr["nrow"], hdr["ncol"])
+
+					data = utils.read_hyper(fpath).data.copy()
+					data = data.reshape(sh[2], sh[0], sh[1])[:, :, ::-1].transpose(1, 2, 0)
 
 
-		self.x = features
+					self.x = data[:,self.labels[:,1], self.labels[:,0]].T
+
+
+
+
+		
+
+
+		# self.x = sample_features
 
 		# reduce dimensions through binning
 		# hsi_binned = hsi_feat.reshape(hsi_feat.shape[0],hsi_feat.shape[1]//bin_size,bin_size).mean(2)

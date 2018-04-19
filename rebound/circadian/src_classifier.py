@@ -29,17 +29,17 @@ class SourceClassifier(object):
 			elif i[:14] == 'hsi_src_labels':
 				src.append(np.load(os.path.join(self.inpath,i)))
 
-		nosrc = np.concatenate(nosrc, axis=0).round().astype(int)
-		src = np.concatenate(src, axis=0).round().astype(int)
+		self.nosrc = np.concatenate(nosrc, axis=0).round().astype(int)
+		self.src = np.concatenate(src, axis=0).round().astype(int)
 		
-		# remove duplicate pixels
-		self.nosrc = np.array(list(set([(nosrc[i][0],nosrc[i][1]) for i in range(nosrc.shape[0])])))
-		self.src = np.array(list(set([(nosrc[i][0],nosrc[i][1]) for i in range(src.shape[0])])))
+		# # remove duplicate pixels
+		# self.nosrc = np.array(list(set([(nosrc[i][0],nosrc[i][1]) for i in range(nosrc.shape[0])])))
+		# self.src = np.array(list(set([(nosrc[i][0],nosrc[i][1]) for i in range(src.shape[0])])))
 
-		# balance classes
-		level_cut = min(self.nosrc.shape[0],self.src.shape[0])
-		self.nosrc = self.nosrc[:level_cut,:]
-		self.src = self.src[:level_cut,:]
+		# # balance classes
+		# level_cut = min(self.nosrc.shape[0],self.src.shape[0])
+		# self.nosrc = self.nosrc[:level_cut,:]
+		# self.src = self.src[:level_cut,:]
 
 		self.hsi = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','gow_stack_clip_2018.npy'))
 		self.lisas = np.load(os.path.join(os.environ['REBOUND_WRITE'],'circadian','spectra_lisas.npy'))
