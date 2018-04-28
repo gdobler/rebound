@@ -32,14 +32,14 @@ def load_and_stack(bin_size = 8):
 
     idx = 0
 
-    for i in range(len(flist))[:1]:
+    for i in range(len(flist)):
 
         print('Loading {}...'.format(i))
 
         # data[idx:idx+sh[0][0], :, :] = np.memmap(flist[i], np.uint16, mode='r').reshape(
         #     sh[i][2], sh[i][0], sh[i][1])[0:mincol, :, ::-1].transpose(1, 2, 0)
 
-        f = np.memmap(flist[i], np.uint16, mode='r').reshape(sh[i][2], sh[i][0], sh[i][1])[0:mincol, :, ::-1].transpose(1, 2, 0).reshape(sh[i][0],sh[i][1]*mincol).T
+        f = np.fromfile(flist[i], np.uint16).reshape(sh[i][2], sh[i][0], sh[i][1])[0:mincol, :, ::-1].transpose(1, 2, 0).reshape(sh[i][0],sh[i][1]*mincol).T
 
         data[:,idx:idx+sh[0][0]//bin_size] = f.reshape(f.shape[0],f.shape[1]//bin_size,bin_size).mean(2)
 

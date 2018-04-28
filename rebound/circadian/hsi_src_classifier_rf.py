@@ -11,15 +11,15 @@ from sklearn.metrics import f1_score
 
 class RFClassifier(object):
 	'''
-	This classifier trains a random forest ensemble on hyper-sepctral image scans (HSI). This scan is a stacked datacube
+	This classifier trains a random forest ensemble on a hyper-spectral image scan (HSI). This scan is a stacked datacube
 	of all HSI scans in the observation period (limited to the Gowanus field of view).
 
-	THis method uses previously engineered features along 2 dimensions for a given observration (pixel): 
+	THis method uses previously engineered features along 2 dimensions for a given observation (pixel): 
 	1. HSI intensity per channel (n=848)
 	2. The weight co-efficient produced by calculating a pixel's spatial autocorrelation 
 	with its neighbors (see spatial_auto.py) (n=848)
 
-	Both dimensions are binned and flattened to create a feature vector of 212 dimensions 
+	Both dimensions are binned and appended to create a feature vector of 212 dimensions 
 	(106 HSI values + 106 spatial wghts)
 
 	The observations (pixels) used for training and testing were previously selected and labeled manually (by sight). 
@@ -61,7 +61,7 @@ class RFClassifier(object):
 
 		else:
 			# for future adaption to use temporal features...
-			pass
+			
 
 
 	def build_training_set(self):
@@ -121,8 +121,8 @@ class RFClassifier(object):
 		self.test_x = self.whiten_data(self.test[:,:-1])
 		self.test_y = self.test[:,-1]
 
-	def train_rf(self, num_trees, verbose = 0):
-		self.rf = RandomForestClassifier(n_estimators=num_trees, verbose = verbose)
+	def train_rf(self, num_trees, verbose = 0, cores = 1):
+		self.rf = RandomForestClassifier(n_estimators=num_trees, n_jobs = cores, verbose = verbose)
 		self.model = self.rf.fit(self.train_x, self.train_y)
 
 	def test_rf(self):
@@ -144,12 +144,14 @@ class RFClassifier(object):
 
 			self.all_feat = np.append(hsi_binned, sa_binned, axis=1)
 
+
+			self.input_feat = self.whiten_data(self.all_feat)
+
+			self.predicted = self.rf.predict(self.input_feat).reshape(self.hsi.shape[1], self.hsi.shape[2])
+
 		else:
 			pass
 
-		self.input_feat = self.whiten_data(self.all_feat)
-
-		self.predicted = self.rf.predict(self.input_feat).reshape(self.hsi.shape[1], self.hsi.shape[2])
 
 
 
